@@ -57,6 +57,28 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        navy: {
+          DEFAULT: "hsl(var(--navy))",
+          dark: "hsl(var(--navy-dark))",
+          light: "hsl(var(--navy-light))",
+        },
+        "blue-pale": "hsl(var(--blue-pale))",
+        "blue-mid": "hsl(var(--blue-mid))",
+        success: {
+          DEFAULT: "hsl(var(--green))",
+          light: "hsl(var(--green-light))",
+          bg: "hsl(var(--green-bg))",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--red))",
+          light: "hsl(var(--red-light))",
+          bg: "hsl(var(--red-bg))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--amber))",
+          light: "hsl(var(--amber-light))",
+          bg: "hsl(var(--amber-bg))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
