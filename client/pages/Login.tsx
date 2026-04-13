@@ -32,7 +32,11 @@ export default function Login() {
         <div className="bg-white rounded-xl shadow-lg p-8 border border-blue-pale">
           {/* Header */}
           <div className="mb-8 text-center">
-            <div className="text-4xl font-bold text-navy mb-2">⚡ ANTI AI</div>
+            <img
+              src="https://cdn.builder.io/api/v1/image/assets%2F48a828bb4e9c4aeab85468fbbc252b37%2F0715bee5fad84e1a88b420b589f8c0e0?format=webp&width=300&height=300"
+              alt="ANTI AI Logo"
+              className="w-20 h-20 mx-auto mb-4"
+            />
             <div className="text-sm text-blue-mid font-semibold uppercase tracking-wider">
               Financial Command Center
             </div>

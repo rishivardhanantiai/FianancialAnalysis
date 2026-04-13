@@ -54,9 +54,13 @@ export default function Sidebar() {
   return (
     <div className="w-56 bg-navy-dark text-white flex flex-col h-screen fixed left-0 top-0 overflow-y-auto">
       {/* Brand */}
-      <div className="p-5 border-b border-navy-light">
-        <div className="text-base font-bold tracking-wider">⚡ ANTI AI</div>
-        <div className="text-xs text-blue-pale/60 mt-1 uppercase tracking-widest font-semibold">
+      <div className="p-4 border-b border-navy-light flex flex-col items-center">
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets%2F48a828bb4e9c4aeab85468fbbc252b37%2F0715bee5fad84e1a88b420b589f8c0e0?format=webp&width=200&height=200"
+          alt="ANTI AI Logo"
+          className="w-12 h-12 mb-2"
+        />
+        <div className="text-xs text-blue-pale/80 uppercase tracking-widest font-semibold text-center">
           Command Center
         </div>
       </div>
