@@ -223,7 +223,7 @@ export default function Index() {
         
         <div style={{flex: 1}}></div>
         <div className="nav-section" style={{borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'16px'}}>System</div>
-        <button className="nav-item" onClick={logout} style={{color:'var(--red)'}}>
+        <button className="nav-item" onClick={() => { logout(); navigate('/login'); }} style={{color:'var(--red)'}}>
           <span className="icon">🚪</span><span>Sign Out</span>
         </button>
       </nav>
