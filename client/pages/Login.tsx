@@ -33,9 +33,9 @@ export default function Login() {
           {/* Header */}
           <div className="mb-8 text-center">
             <img
-              src="https://cdn.builder.io/api/v1/image/assets%2F48a828bb4e9c4aeab85468fbbc252b37%2F0715bee5fad84e1a88b420b589f8c0e0?format=webp&width=300&height=300"
+              src="/logo.jpg"
               alt="ANTI AI Logo"
-              className="w-20 h-20 mx-auto mb-4"
+              className="w-24 h-24 object-contain mx-auto mb-4 rounded-full shadow-md"
             />
             <div className="text-sm text-blue-mid font-semibold uppercase tracking-wider">
               Financial Command Center

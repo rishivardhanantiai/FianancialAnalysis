@@ -222,10 +222,10 @@ export default function Departments() {
           Spend Distribution
         </h3>
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData}>
+          <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
             <XAxis dataKey="name" stroke="#5a718a" style={{ fontSize: 12 }} />
-            <YAxis stroke="#5a718a" style={{ fontSize: 12 }} />
+            <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
             <Tooltip
               formatter={(value) => formatCurrency(value as number)}
               contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}

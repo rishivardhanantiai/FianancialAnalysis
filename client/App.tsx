@@ -8,9 +8,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import DailyLog from "./pages/DailyLog";
-import Placeholder from "./pages/Placeholder";
+import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,63 +22,14 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/log" element={<DailyLog />} />
-            <Route
-              path="/analysis"
-              element={
-                <Placeholder
-                  title="Financial Analysis"
-                  subtitle="Auto-aggregated from Daily Log · Month-by-month performance"
-                />
-              }
-            />
-            <Route
-              path="/projects"
-              element={
-                <Placeholder
-                  title="Project Tracker"
-                  subtitle="Auto P&L per project from Daily Log"
-                />
-              }
-            />
-            <Route
-              path="/departments"
-              element={
-                <Placeholder
-                  title="Department Tracker"
-                  subtitle="Budget vs Actual · Efficiency flags · Auto from Daily Log"
-                />
-              }
-            />
-            <Route
-              path="/forecast"
-              element={
-                <Placeholder
-                  title="3-Month Revenue Projection"
-                  subtitle="Base auto-pulled from Daily Log · Only assumptions are editable"
-                />
-              }
-            />
-            <Route
-              path="/insights"
-              element={
-                <Placeholder
-                  title="AI Insights Engine"
-                  subtitle="Auto-generated from Daily Log rules engine · Updates with every transaction"
-                />
-              }
-            />
-            <Route
-              path="/cashflow"
-              element={
-                <Placeholder
-                  title="Cash Flow Analysis"
-                  subtitle="Running cash position · Inflows vs Outflows"
-                />
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/" element={<Index />} />
+            <Route path="/log" element={<Index />} />
+            <Route path="/analysis" element={<Index />} />
+            <Route path="/projects" element={<Index />} />
+            <Route path="/departments" element={<Index />} />
+            <Route path="/forecast" element={<Index />} />
+            <Route path="/insights" element={<Index />} />
+            <Route path="/cashflow" element={<Index />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ANTI AI — Financial Command Center</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --navy:#1F3A5F;--navy-dark:#152c4a;--navy-light:#2a4f7c;
+  --blue-pale:#DCE6F1;--blue-mid:#b8d0e8;
+  --bg:#F0F4F8;--card:#ffffff;--border:#e2eaf3;
+  --green:#2E7D32;--green-bg:#e8f5e9;--green-light:#c8e6c9;
+  --red:#C62828;--red-bg:#ffebee;--red-light:#ef9a9a;
+  --amber:#E65100;--amber-bg:#fff3e0;--amber-light:#ffcc80;
+  --text:#1a2940;--muted:#5a718a;--subtle:#8fa8c4;
+  --radius:10px;--shadow:0 2px 12px rgba(31,58,95,0.08);
+  --shadow-lg:0 6px 28px rgba(31,58,95,0.13);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:13px;min-height:100vh}
+
+/* ── LAYOUT ── */
+.shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:220px;background:var(--navy);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.content{flex:1;overflow-y:auto;padding:20px 24px}
+
+/* ── SIDEBAR ── */
+.brand{padding:20px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.1)}
+.brand-name{font-size:15px;font-weight:800;color:#fff;letter-spacing:0.5px}
+.brand-sub{font-size:10px;color:rgba(255,255,255,0.45);margin-top:2px;text-transform:uppercase;letter-spacing:1px}
+.nav-section{padding:12px 10px 4px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:1.2px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:1px 6px;border-radius:8px;cursor:pointer;color:rgba(255,255,255,0.65);font-size:12px;font-weight:500;transition:all 0.15s}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,0.15);color:#fff;font-weight:700}
+.nav-item .icon{width:16px;text-align:center;font-size:13px}
+.status-dot{width:7px;height:7px;border-radius:50%;margin-left:auto;flex-shrink:0}
+.status-dot.green{background:#4caf50}
+.status-dot.red{background:#ef5350}
+.status-dot.amber{background:#ffa726}
+
+/* ── TOPBAR ── */
+.topbar-title{font-size:14px;font-weight:700;color:var(--navy)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.status-badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:5px}
+.status-badge.green{background:var(--green-bg);color:var(--green)}
+.status-badge.red{background:var(--red-bg);color:var(--red)}
+.status-badge.amber{background:var(--amber-bg);color:var(--amber)}
+.btn{padding:7px 14px;border-radius:var(--radius);border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all 0.15s}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-primary:hover{background:var(--navy-light)}
+.btn-outline{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
+.btn-outline:hover{background:var(--blue-pale)}
+.btn-danger{background:var(--red);color:#fff;font-size:11px;padding:4px 10px}
+
+/* ── PAGE SECTIONS ── */
+.page{display:none}
+.page.active{display:block}
+.page-title{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px}
+.page-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+
+/* ── CARDS GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+
+/* ── KPI CARD ── */
+.kpi{background:var(--card);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);border:1px solid var(--border);transition:transform 0.15s}
+.kpi:hover{transform:translateY(-1px)}
+.kpi-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between}
+.kpi-value{font-size:22px;font-weight:800;color:var(--navy);line-height:1}
+.kpi-sub{font-size:10px;color:var(--subtle);margin-top:5px}
+.kpi.green .kpi-value{color:var(--green)}
+.kpi.red .kpi-value{color:var(--red)}
+.kpi.amber .kpi-value{color:var(--amber)}
+.kpi-icon{font-size:18px}
+
+/* ── BOX ── */
+.box{background:var(--card);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.box-title{font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.box-title span{font-size:10px;font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0}
+
+/* ── SECTION BAR ── */
+.sec-bar{background:var(--navy);color:#fff;padding:10px 18px;border-radius:var(--radius);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{background:var(--blue-pale);color:var(--navy);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:0.4px;padding:8px 10px;text-align:left;white-space:nowrap}
+.tbl td{padding:8px 10px;border-bottom:1px solid #f0f4f8;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#fafcff}
+.tbl-input{width:100%;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);background:var(--bg);font-family:inherit}
+.tbl-input:focus{outline:none;border-color:var(--navy);background:#fff}
+select.tbl-input{cursor:pointer}
+
+/* ── TAGS ── */
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;white-space:nowrap}
+.tag.green{background:var(--green-bg);color:var(--green)}
+.tag.red{background:var(--red-bg);color:var(--red)}
+.tag.amber{background:var(--amber-bg);color:var(--amber)}
+.tag.blue{background:var(--blue-pale);color:var(--navy)}
+.tag.grey{background:#f1f5f9;color:#475569}
+
+/* ── INSIGHT CARDS ── */
+.insight{border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;border-left:4px solid;display:flex;gap:12px}
+.insight.red{background:var(--red-bg);border-left-color:var(--red)}
+.insight.amber{background:var(--amber-bg);border-left-color:#ffa726}
+.insight.green{background:var(--green-bg);border-left-color:var(--green)}
+.insight.blue{background:var(--blue-pale);border-left-color:var(--navy)}
+.insight-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.insight-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px}
+.insight-body{font-size:11px;color:var(--muted);line-height:1.5}
+.insight-action{font-size:11px;font-weight:600;color:var(--navy);background:rgba(31,58,95,0.08);padding:5px 10px;border-radius:6px;margin-top:8px;display:inline-block}
+
+/* ── BARS ── */
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bar-lbl{width:90px;font-size:11px;color:var(--muted);text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:16px;background:#f0f4f8;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;transition:width 0.6s ease}
+.bar-fill span{font-size:9px;font-weight:700;color:rgba(255,255,255,0.9)}
+.bar-amt{width:60px;font-size:11px;font-weight:700;color:var(--text);text-align:right;flex-shrink:0}
+
+/* ── PROGRESS ── */
+.prog-bar{height:6px;background:#e8eef5;border-radius:3px;overflow:hidden;margin-top:6px}
+.prog-fill{height:100%;border-radius:3px;transition:width 0.5s}
+
+/* ── FORM ── */
+.form-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:8px}
+.form-row-2{display:grid;grid-template-columns:repeat(5,1fr) auto;gap:8px;margin-bottom:8px;align-items:end}
+.form-group label{display:block;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px}
+.form-group input,.form-group select{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);background:#fff;font-family:inherit;transition:border 0.15s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(31,58,95,0.08)}
+
+/* ── ASSUMPTION BOX ── */
+.assume-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
+.assume-item{background:var(--blue-pale);border-radius:8px;padding:12px;border:2px solid var(--blue-mid)}
+.assume-item label{display:block;font-size:9px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.assume-item input{width:100%;border:1.5px solid var(--blue-mid);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--navy);background:#fff;font-family:inherit;text-align:center}
+.assume-item input:focus{outline:none;border-color:var(--navy)}
+
+/* ── FORECAST TABLE ── */
+.fcst-table{width:100%;border-collapse:collapse;font-size:12px}
+.fcst-table th{background:var(--navy);color:#fff;padding:9px 12px;text-align:center;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.fcst-table td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:center;font-weight:600}
+.fcst-table tr:last-child td{border-bottom:none;background:var(--blue-pale);font-weight:800}
+.fcst-table .positive{color:var(--green)}
+.fcst-table .negative{color:var(--red)}
+
+/* ── MISC ── */
+.divider{height:1px;background:var(--border);margin:16px 0}
+.empty{text-align:center;padding:40px;color:var(--subtle);font-size:12px}
+.mono{font-family:'Courier New',monospace}
+.text-right{text-align:right}
+.text-center{text-align:center}
+.fw-bold{font-weight:700}
+.mt-8{margin-top:8px}
+.mb-16{margin-bottom:16px}
+.flex-between{display:flex;justify-content:space-between;align-items:center}
+
+/* ── CHART CONTAINER ── */
+.chart-wrap{position:relative;width:100%;height:220px}
+.chart-wrap canvas{width:100%!important}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--blue-mid);border-radius:3px}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal{background:#fff;border-radius:14px;padding:24px;width:560px;max-width:95vw;box-shadow:var(--shadow-lg)}
+.modal-title{font-size:16px;font-weight:800;color:var(--navy);margin-bottom:16px}
+.modal-form{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* ── ALERT STRIP ── */
+.alert{border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;line-height:1.5;display:flex;align-items:flex-start;gap:8px}
+.alert strong{font-weight:700}
+.alert.red{background:var(--red-bg);border:1px solid var(--red-light)}
+.alert.amber{background:var(--amber-bg);border:1px solid var(--amber-light)}
+.alert.green{background:var(--green-bg);border:1px solid var(--green-light)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.sidebar{width:56px}.brand-sub,.brand-name,.nav-item span,.nav-section{display:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ══════ SIDEBAR ══════ -->
+<nav class="sidebar">
+  <div class="brand">
+    <div class="brand-name">⚡ ANTI AI</div>
+    <div class="brand-sub">Command Center</div>
+  </div>
+  <div class="nav-section">Core</div>
+  <div class="nav-item active" onclick="nav('dashboard')">
+    <span class="icon">📊</span><span>Dashboard</span>
+    <span class="status-dot" id="dot-status"></span>
+  </div>
+  <div class="nav-item" onclick="nav('log')">
+    <span class="icon">📋</span><span>Daily Log</span>
+  </div>
+  <div class="nav-section">Analysis</div>
+  <div class="nav-item" onclick="nav('analysis')">
+    <span class="icon">📈</span><span>Financial Analysis</span>
+  </div>
+  <div class="nav-item" onclick="nav('projects')">
+    <span class="icon">🗂️</span><span>Projects</span>
+  </div>
+  <div class="nav-item" onclick="nav('departments')">
+    <span class="icon">🏢</span><span>Departments</span>
+  </div>
+  <div class="nav-section">Intelligence</div>
+  <div class="nav-item" onclick="nav('forecast')">
+    <span class="icon">🔮</span><span>Forecast</span>
+  </div>
+  <div class="nav-item" onclick="nav('insights')">
+    <span class="icon">🧠</span><span>AI Insights</span>
+  </div>
+  <div class="nav-item" onclick="nav('cashflow')">
+    <span class="icon">💧</span><span>Cash Flow</span>
+  </div>
+</nav>
+
+<!-- ══════ MAIN ══════ -->
+<div class="main">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+    </div>
+    <div class="topbar-right">
+      <span id="topbar-status" class="status-badge green">● Healthy</span>
+      <span style="font-size:11px;color:var(--muted)" id="topbar-date"></span>
+      <button class="btn btn-primary" onclick="openModal()">+ Add Transaction</button>
+    </div>
+  </div>
+
+  <!-- Content area -->
+  <div class="content">
+
+    <!-- ══════════════ DASHBOARD ══════════════ -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Financial Command Center</div>
+      <div class="page-sub" id="dash-sub">All KPIs auto-calculated from Daily Log · ANTI AI Private Limited</div>
+
+      <!-- KPI Row 1 -->
+      <div class="kpi-grid">
+        <div class="kpi green">
+          <div class="kpi-label">Total Revenue <span class="kpi-icon">💰</span></div>
+          <div class="kpi-value" id="d-rev">—</div>
+          <div class="kpi-sub" id="d-rev-sub">From all transactions</div>
+        </div>
+        <div class="kpi red">
+          <div class="kpi-label">Total Expenses <span class="kpi-icon">💸</span></div>
+          <div class="kpi-value" id="d-exp">—</div>
+          <div class="kpi-sub" id="d-exp-sub">All departments</div>
+        </div>
+        <div class="kpi" id="kpi-profit">
+          <div class="kpi-label">Net Profit <span class="kpi-icon">📊</span></div>
+          <div class="kpi-value" id="d-profit">—</div>
+          <div class="kpi-sub" id="d-profit-sub">Revenue minus expenses</div>
+        </div>
+        <div class="kpi" id="kpi-margin">
+          <div class="kpi-label">Gross Margin <span class="kpi-icon">📐</span></div>
+          <div class="kpi-value" id="d-margin">—</div>
+          <div class="kpi-sub">Target: &gt;60%</div>
+        </div>
+      </div>
+
+      <!-- KPI Row 2 -->
+      <div class="kpi-grid">
+        <div class="kpi" id="kpi-cm">
+          <div class="kpi-label">Contribution Margin <span class="kpi-icon">⚙️</span></div>
+          <div class="kpi-value" id="d-cm">—</div>
+          <div class="kpi-sub">Rev − Variable Cost / Rev</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">CAC <span class="kpi-icon">🎯</span></div>
+          <div class="kpi-value" id="d-cac">—</div>
+          <div class="kpi-sub">Marketing+Sales / New Custs</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">LTV <span class="kpi-icon">♾️</span></div>
+          <div class="kpi-value" id="d-ltv">—</div>
+          <div class="kpi-sub">Total Rev / Total Customers</div>
+        </div>
+        <div class="kpi" id="kpi-runway">
+          <div class="kpi-label">Runway <span class="kpi-icon">🛣️</span></div>
+          <div class="kpi-value" id="d-runway">—</div>
+          <div class="kpi-sub" id="d-burn-sub">Monthly burn rate</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="grid-2">
+        <div class="box">
+          <div class="box-title">Revenue vs Expenses (Monthly) <span>Auto-grouped from Daily Log</span></div>
+          <div class="chart-wrap"><canvas id="chart-revexp"></canvas></div>
+        </div>
+        <div class="box">
+          <div class="box-title">Department Spend <span>Q1 2026</span></div>
+          <div class="chart-wrap"><canvas id="chart-dept"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Bottom row -->
+      <div class="grid-2">
+        <div class="box">
+          <div class="box-title">Cost Mix</div>
+          <div id="cost-mix-bars"></div>
+        </div>
+        <div class="box">
+          <div class="box-title">Customer Revenue Split</div>
+          <div id="cust-split"></div>
+          <div class="chart-wrap" style="height:160px"><canvas id="chart-custsplit"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ DAILY LOG ══════════════ -->
+    <div class="page" id="page-log">
+      <div class="page-title">Daily Transaction Log</div>
+      <div class="page-sub">Single source of truth · Every row instantly updates all dashboards</div>
+
+      <!-- Quick add form -->
+      <div class="box mb-16">
+        <div class="box-title">Quick Add Transaction</div>
+        <div class="form-row" style="grid-template-columns:130px 110px 130px 140px 140px 130px 120px 110px 120px 1fr auto">
+          <div class="form-group"><label>Date</label><input type="date" id="f-date"/></div>
+          <div class="form-group"><label>Type</label><select id="f-type"><option>Revenue</option><option>Expense</option></select></div>
+          <div class="form-group"><label>Amount (₹)</label><input type="number" id="f-amount" placeholder="0" min="0"/></div>
+          <div class="form-group"><label>Department</label><select id="f-dept"><option value="">— Select —</option><option>Marketing</option><option>Sales</option><option>Finance</option><option>HR</option><option>Tech</option><option>Ops</option><option>Management</option></select></div>
+          <div class="form-group"><label>Project</label><input type="text" id="f-project" placeholder="e.g. Platform"/></div>
+          <div class="form-group"><label>Customer</label><input type="text" id="f-customer" placeholder="Customer name"/></div>
+          <div class="form-group"><label>Cust. Type</label><select id="f-ctype"><option value="">—</option><option>New</option><option>Existing</option></select></div>
+          <div class="form-group"><label>Cost Type</label><select id="f-costt"><option value="">—</option><option>Fixed</option><option>Variable</option></select></div>
+          <div class="form-group"><label>Owner</label><input type="text" id="f-owner" placeholder="Owner"/></div>
+          <div class="form-group"><label>Notes</label><input type="text" id="f-notes" placeholder="Notes"/></div>
+          <div class="form-group"><label>&nbsp;</label><button class="btn btn-primary" onclick="addRow()" style="height:33px;white-space:nowrap">+ Add</button></div>
+        </div>
+        <div id="log-error" style="color:var(--red);font-size:11px;margin-top:4px;display:none"></div>
+      </div>
+
+      <div class="box">
+        <div class="box-title flex-between">
+          <span>Transaction Log <span id="log-count" style="font-size:10px;font-weight:500;color:var(--muted)"></span></span>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="log-search" placeholder="🔍 Search..." oninput="renderLog()" style="border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;width:160px"/>
+            <select id="log-filter-type" onchange="renderLog()" style="border:1.5px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px">
+              <option value="">All Types</option><option>Revenue</option><option>Expense</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead><tr>
+              <th>Date</th><th>Type</th><th>Amount</th><th>Department</th>
+              <th>Project</th><th>Customer</th><th>Cust.Type</th>
+              <th>Cost Type</th><th>Owner</th><th>Notes</th><th>Del</th>
+            </tr></thead>
+            <tbody id="log-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ ANALYSIS ══════════════ -->
+    <div class="page" id="page-analysis">
+      <div class="page-title">Financial Analysis</div>
+      <div class="page-sub">Auto-aggregated from Daily Log · Month-by-month performance</div>
+
+      <div class="grid-2">
+        <div class="box">
+          <div class="box-title">Monthly Revenue & Expense Trend</div>
+          <div class="chart-wrap"><canvas id="chart-monthly-trend"></canvas></div>
+        </div>
+        <div class="box">
+          <div class="box-title">Profit Trend</div>
+          <div class="chart-wrap"><canvas id="chart-profit-trend"></canvas></div>
+        </div>
+      </div>
+
+      <div class="box mb-16">
+        <div class="box-title">Monthly Performance Table</div>
+        <table class="tbl" id="monthly-table">
+          <thead><tr><th>Month</th><th>Revenue</th><th>Expenses</th><th>Net Profit</th><th>Margin</th><th>Fixed Cost</th><th>Variable Cost</th><th>Status</th></tr></thead>
+          <tbody id="monthly-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="grid-2">
+        <div class="box">
+          <div class="box-title">Top Customers by Revenue</div>
+          <table class="tbl" id="cust-table">
+            <thead><tr><th>Customer</th><th>Revenue</th><th>% Share</th><th>Type</th></tr></thead>
+            <tbody id="cust-tbody"></tbody>
+          </table>
+        </div>
+        <div class="box">
+          <div class="box-title">Marketing ROI Analysis</div>
+          <div id="mkt-roi-content"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ PROJECTS ══════════════ -->
+    <div class="page" id="page-projects">
+      <div class="page-title">Project Tracker</div>
+      <div class="page-sub">Auto P&L per project from Daily Log</div>
+      <div class="box">
+        <div class="box-title">Project P&L Summary</div>
+        <table class="tbl">
+          <thead><tr><th>Project</th><th>Revenue</th><th>Expenses</th><th>Gross Profit</th><th>Margin %</th><th>Transactions</th><th>Status</th></tr></thead>
+          <tbody id="proj-tbody"></tbody>
+        </table>
+      </div>
+      <div class="chart-wrap" style="height:200px;margin-top:16px"><canvas id="chart-proj"></canvas></div>
+    </div>
+
+    <!-- ══════════════ DEPARTMENTS ══════════════ -->
+    <div class="page" id="page-departments">
+      <div class="page-title">Department Tracker</div>
+      <div class="page-sub">Budget vs Actual · Efficiency flags · Auto from Daily Log</div>
+      <div class="kpi-grid">
+        <div class="kpi red"><div class="kpi-label">Overspending</div><div class="kpi-value" id="dept-over">—</div><div class="kpi-sub">Departments over budget</div></div>
+        <div class="kpi amber"><div class="kpi-label">Near Limit</div><div class="kpi-value" id="dept-near">—</div><div class="kpi-sub">80–100% utilized</div></div>
+        <div class="kpi green"><div class="kpi-label">On Track</div><div class="kpi-value" id="dept-ok">—</div><div class="kpi-sub">Under 80% utilized</div></div>
+        <div class="kpi"><div class="kpi-label">Total Dept Spend</div><div class="kpi-value" id="dept-total">—</div><div class="kpi-sub">All departments</div></div>
+      </div>
+      <div class="box">
+        <div class="box-title">Department Budget vs Actual</div>
+        <table class="tbl">
+          <thead><tr><th>Department</th><th>Alloc %</th><th>Budget</th><th>Actual Spend</th><th>Variance</th><th>Utilized %</th><th>Status</th></tr></thead>
+          <tbody id="dept-tbody"></tbody>
+        </table>
+      </div>
+      <div class="box mt-8">
+        <div class="box-title">Spend Distribution</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="chart-dept-dist"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ══════════════ FORECAST ══════════════ -->
+    <div class="page" id="page-forecast">
+      <div class="page-title">3-Month Revenue Projection</div>
+      <div class="page-sub">Base auto-pulled from Daily Log · Only assumptions are editable below</div>
+
+      <div class="sec-bar"><span>⚙ ASSUMPTION INPUTS — Edit only these cells</span><span style="font-size:10px;opacity:0.7">All projections update instantly</span></div>
+      <div class="assume-grid">
+        <div class="assume-item"><label>Revenue Growth %</label><input type="number" id="a-revgrowth" value="15" step="1" oninput="renderForecast()"/>%</div>
+        <div class="assume-item"><label>Expansion Rate %</label><input type="number" id="a-expansion" value="5" step="1" oninput="renderForecast()"/>%</div>
+        <div class="assume-item"><label>Churn Rate %</label><input type="number" id="a-churn" value="6" step="1" oninput="renderForecast()"/>%</div>
+        <div class="assume-item"><label>Expense Growth %</label><input type="number" id="a-expgrowth" value="8" step="1" oninput="renderForecast()"/>%</div>
+        <div class="assume-item"><label>Opening Cash (₹)</label><input type="number" id="a-cash" value="500000" step="10000" oninput="renderForecast()"/></div>
+      </div>
+
+      <!-- Projection table -->
+      <div class="grid-2">
+        <div class="box">
+          <div class="box-title">Revenue Waterfall (Bottom-Up)</div>
+          <table class="fcst-table" id="fcst-rev-table">
+            <thead><tr><th>Month</th><th>Opening</th><th>+New</th><th>+Expansion</th><th>−Churn</th><th>Closing</th></tr></thead>
+            <tbody id="fcst-rev-body"></tbody>
+          </table>
+        </div>
+        <div class="box">
+          <div class="box-title">Expense & Cash Flow</div>
+          <table class="fcst-table">
+            <thead><tr><th>Month</th><th>Expenses</th><th>Net CF</th><th>Opening Cash</th><th>Closing Cash</th><th>Runway</th></tr></thead>
+            <tbody id="fcst-cf-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="box">
+        <div class="box-title">Projection Chart — Revenue · Expenses · Cash</div>
+        <div class="chart-wrap" style="height:240px"><canvas id="chart-forecast"></canvas></div>
+      </div>
+
+      <div id="fcst-insights" style="margin-top:12px"></div>
+    </div>
+
+    <!-- ══════════════ INSIGHTS ══════════════ -->
+    <div class="page" id="page-insights">
+      <div class="page-title">AI Insights Engine</div>
+      <div class="page-sub">Auto-generated from Daily Log rules engine · Updates with every transaction</div>
+      <div id="insights-critical" class="mb-16"></div>
+      <div id="insights-warnings" class="mb-16"></div>
+      <div id="insights-positive" class="mb-16"></div>
+      <div id="insights-recs" class="mb-16"></div>
+    </div>
+
+    <!-- ══════════════ CASH FLOW ══════════════ -->
+    <div class="page" id="page-cashflow">
+      <div class="page-title">Cash Flow Analysis</div>
+      <div class="page-sub">Running cash position · Inflows vs Outflows</div>
+      <div class="kpi-grid">
+        <div class="kpi green"><div class="kpi-label">Total Inflow</div><div class="kpi-value" id="cf-in">—</div><div class="kpi-sub">All revenue</div></div>
+        <div class="kpi red"><div class="kpi-label">Total Outflow</div><div class="kpi-value" id="cf-out">—</div><div class="kpi-sub">All expenses</div></div>
+        <div class="kpi" id="cf-net-kpi"><div class="kpi-label">Net Cash Flow</div><div class="kpi-value" id="cf-net">—</div><div class="kpi-sub">Inflow − Outflow</div></div>
+        <div class="kpi"><div class="kpi-label">Cash Balance</div><div class="kpi-value" id="cf-bal">—</div><div class="kpi-sub">Opening + Net</div></div>
+      </div>
+      <div class="grid-2">
+        <div class="box">
+          <div class="box-title">Monthly Cash Flow</div>
+          <div class="chart-wrap"><canvas id="chart-cf"></canvas></div>
+        </div>
+        <div class="box">
+          <div class="box-title">Monthly Running Balance</div>
+          <table class="tbl">
+            <thead><tr><th>Month</th><th>Inflow</th><th>Outflow</th><th>Net</th><th>Running Balance</th><th>Status</th></tr></thead>
+            <tbody id="cf-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ══════ ADD TRANSACTION MODAL ══════ -->
+<div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">+ Add Transaction</div>
+    <div class="modal-form">
+      <div class="form-group"><label>Date</label><input type="date" id="m-date"/></div>
+      <div class="form-group"><label>Type</label><select id="m-type"><option>Revenue</option><option>Expense</option></select></div>
+      <div class="form-group"><label>Amount (₹)</label><input type="number" id="m-amount" placeholder="0" min="0"/></div>
+      <div class="form-group"><label>Department</label><select id="m-dept"><option value="">— Select —</option><option>Marketing</option><option>Sales</option><option>Finance</option><option>HR</option><option>Tech</option><option>Ops</option><option>Management</option></select></div>
+      <div class="form-group"><label>Project</label><input type="text" id="m-project" placeholder="Project name"/></div>
+      <div class="form-group"><label>Customer</label><input type="text" id="m-customer" placeholder="Customer name"/></div>
+      <div class="form-group"><label>Customer Type</label><select id="m-ctype"><option value="">—</option><option>New</option><option>Existing</option></select></div>
+      <div class="form-group"><label>Cost Type</label><select id="m-costt"><option value="">—</option><option>Fixed</option><option>Variable</option></select></div>
+      <div class="form-group"><label>Owner</label><input type="text" id="m-owner" placeholder="Owner"/></div>
+      <div class="form-group" style="grid-column:1/-1"><label>Notes</label><input type="text" id="m-notes" placeholder="Notes or description"/></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="addFromModal()">Add Transaction</button>
+    </div>
+    <div id="modal-error" style="color:var(--red);font-size:11px;margin-top:8px;display:none"></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+// DATA STORE
+// ════════════════════════════════════════════════════════════════════
+const DEPT_ALLOC = {Marketing:0.25,Sales:0.12,Finance:0.06,HR:0.21,Tech:0.16,Ops:0.10,Management:0.10};
+const OPENING_CASH = 500000;
+
+// Seed data from Excel file
+let DATA = [
+  {date:'2026-01-03',type:'Revenue',amount:120000,dept:'Sales',project:'Enterprise',customer:'Reliance Ltd',ctype:'New',costt:'',owner:'Ankit',notes:'Enterprise annual deal'},
+  {date:'2026-01-05',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Jan'},
+  {date:'2026-01-07',type:'Revenue',amount:28000,dept:'Sales',project:'SMB',customer:'Infosys SMB',ctype:'New',costt:'',owner:'Priya',notes:'Starter plan signup'},
+  {date:'2026-01-08',type:'Expense',amount:95000,dept:'HR',project:'Hiring',customer:'',ctype:'',costt:'Fixed',owner:'Kavya',notes:'Engineering salaries Jan'},
+  {date:'2026-01-10',type:'Expense',amount:8500,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Google Ads Jan'},
+  {date:'2026-01-12',type:'Revenue',amount:45000,dept:'Sales',project:'Enterprise',customer:'Tata Digital',ctype:'New',costt:'',owner:'Ankit',notes:'Mid-market deal'},
+  {date:'2026-01-14',type:'Expense',amount:4200,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'AWS hosting Jan'},
+  {date:'2026-01-16',type:'Expense',amount:6000,dept:'Finance',project:'Compliance',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Legal retainer'},
+  {date:'2026-01-18',type:'Revenue',amount:18000,dept:'Sales',project:'SMB',customer:'Wipro SME',ctype:'Existing',costt:'',owner:'Priya',notes:'Renewal - Starter'},
+  {date:'2026-01-20',type:'Expense',amount:3500,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'LinkedIn Ads Jan'},
+  {date:'2026-01-22',type:'Revenue',amount:35000,dept:'Sales',project:'Enterprise',customer:'HCL Tech',ctype:'Existing',costt:'',owner:'Ankit',notes:'Upsell existing'},
+  {date:'2026-01-25',type:'Expense',amount:1800,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'SaaS subscriptions'},
+  {date:'2026-01-27',type:'Expense',amount:22000,dept:'Management',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Founder salaries'},
+  {date:'2026-01-29',type:'Revenue',amount:12000,dept:'Sales',project:'SMB',customer:'Mahindra SME',ctype:'New',costt:'',owner:'Ravi',notes:'SMB onboarding'},
+  {date:'2026-01-31',type:'Expense',amount:2800,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'Datadog monitoring'},
+  {date:'2026-02-02',type:'Revenue',amount:135000,dept:'Sales',project:'Enterprise',customer:'Adani Digital',ctype:'New',costt:'',owner:'Ankit',notes:'Enterprise Q1 deal'},
+  {date:'2026-02-03',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Feb'},
+  {date:'2026-02-05',type:'Expense',amount:98000,dept:'HR',project:'Hiring',customer:'',ctype:'',costt:'Fixed',owner:'Kavya',notes:'Full team salaries Feb'},
+  {date:'2026-02-07',type:'Revenue',amount:28000,dept:'Sales',project:'SMB',customer:'Bajaj Finserv',ctype:'New',costt:'',owner:'Priya',notes:'SMB deal Feb'},
+  {date:'2026-02-09',type:'Expense',amount:12000,dept:'Marketing',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Brand redesign agency'},
+  {date:'2026-02-10',type:'Revenue',amount:45000,dept:'Sales',project:'Enterprise',customer:'Reliance Ltd',ctype:'Existing',costt:'',owner:'Ankit',notes:'Upsell Reliance'},
+  {date:'2026-02-12',type:'Expense',amount:5500,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'AWS + Cloudflare Feb'},
+  {date:'2026-02-14',type:'Revenue',amount:22000,dept:'Sales',project:'SMB',customer:'Infosys SMB',ctype:'Existing',costt:'',owner:'Priya',notes:'Existing renewal'},
+  {date:'2026-02-16',type:'Expense',amount:6000,dept:'Finance',project:'Compliance',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Legal retainer Feb'},
+  {date:'2026-02-18',type:'Expense',amount:9000,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Facebook & Instagram ads'},
+  {date:'2026-02-20',type:'Revenue',amount:15000,dept:'Sales',project:'SMB',customer:'Meesho Seller',ctype:'New',costt:'',owner:'Ravi',notes:'New SMB'},
+  {date:'2026-02-22',type:'Expense',amount:1800,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'SaaS tools Feb'},
+  {date:'2026-02-24',type:'Expense',amount:25000,dept:'Management',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Founder salaries Feb'},
+  {date:'2026-02-26',type:'Revenue',amount:38000,dept:'Sales',project:'Enterprise',customer:'Tata Digital',ctype:'Existing',costt:'',owner:'Ankit',notes:'Tata expansion'},
+  {date:'2026-02-28',type:'Expense',amount:3200,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'New Relic APM'},
+  {date:'2026-03-01',type:'Revenue',amount:160000,dept:'Sales',project:'Enterprise',customer:'HDFC Digital',ctype:'New',costt:'',owner:'Ankit',notes:'Q1 close - large deal'},
+  {date:'2026-03-03',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Mar'},
+  {date:'2026-03-04',type:'Expense',amount:102000,dept:'HR',project:'Hiring',customer:'',ctype:'',costt:'Fixed',owner:'Kavya',notes:'Expanded team salaries'},
+  {date:'2026-03-05',type:'Revenue',amount:35000,dept:'Sales',project:'SMB',customer:'Nykaa',ctype:'New',costt:'',owner:'Priya',notes:'SMB enterprise'},
+  {date:'2026-03-07',type:'Expense',amount:15000,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Launch campaign Mar'},
+  {date:'2026-03-09',type:'Revenue',amount:45000,dept:'Sales',project:'Enterprise',customer:'Adani Digital',ctype:'Existing',costt:'',owner:'Ankit',notes:'Adani expansion'},
+  {date:'2026-03-10',type:'Expense',amount:7200,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'Infrastructure scale-up'},
+  {date:'2026-03-12',type:'Revenue',amount:25000,dept:'Sales',project:'SMB',customer:'Wipro SME',ctype:'Existing',costt:'',owner:'Priya',notes:'Wipro upsell'},
+  {date:'2026-03-14',type:'Expense',amount:6000,dept:'Finance',project:'Compliance',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Legal retainer Mar'},
+  {date:'2026-03-15',type:'Expense',amount:18000,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Influencer partnerships'},
+  {date:'2026-03-17',type:'Revenue',amount:30000,dept:'Sales',project:'SMB',customer:'Bajaj Finserv',ctype:'Existing',costt:'',owner:'Ravi',notes:'Bajaj renewal Mar'},
+  {date:'2026-03-18',type:'Expense',amount:1800,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Tools Mar'},
+  {date:'2026-03-20',type:'Revenue',amount:55000,dept:'Sales',project:'Enterprise',customer:'Meesho Corp',ctype:'New',costt:'',owner:'Ankit',notes:'Meesho enterprise sign'},
+  {date:'2026-03-22',type:'Expense',amount:28000,dept:'Management',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Salaries + bonus'},
+  {date:'2026-03-24',type:'Expense',amount:8000,dept:'Tech',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'Dev tooling upgrade'},
+  {date:'2026-03-26',type:'Revenue',amount:18000,dept:'Sales',project:'SMB',customer:'HDFC SME',ctype:'New',costt:'',owner:'Priya',notes:'New SMB sign'},
+  {date:'2026-03-28',type:'Expense',amount:5500,dept:'Marketing',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'New website design'},
+  {date:'2026-03-30',type:'Expense',amount:4000,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'End of month infra'},
+];
+
+// ════════════════════════════════════════════════════════════════════
+// UTILITY FUNCTIONS
+// ════════════════════════════════════════════════════════════════════
+const fmt = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const fmtK = n => n >= 100000 ? '₹' + (n/100000).toFixed(2) + 'L' : n >= 1000 ? '₹' + (n/1000).toFixed(1) + 'K' : '₹' + Math.round(n);
+const pct = n => (n*100).toFixed(1) + '%';
+
+function groupBy(arr, key) {
+  return arr.reduce((acc, r) => {
+    const k = r[key] || 'Unknown';
+    if (!acc[k]) acc[k] = [];
+    acc[k].push(r); return acc;
+  }, {});
+}
+
+function monthKey(dateStr) {
+  if (!dateStr) return '';
+  const d = dateStr.substring(0,7);
+  return d;
+}
+
+function monthLabel(mk) {
+  const [y, m] = mk.split('-');
+  const months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[parseInt(m)] + ' ' + y;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CORE CALCULATIONS — derive all KPIs from DATA
+// ════════════════════════════════════════════════════════════════════
+function calc() {
+  const rev = DATA.filter(r=>r.type==='Revenue');
+  const exp = DATA.filter(r=>r.type==='Expense');
+  const totalRev = rev.reduce((s,r)=>s+r.amount,0);
+  const totalExp = exp.reduce((s,r)=>s+r.amount,0);
+  const varCost = exp.filter(r=>r.costt==='Variable').reduce((s,r)=>s+r.amount,0);
+  const fixedCost = exp.filter(r=>r.costt==='Fixed').reduce((s,r)=>s+r.amount,0);
+  const mktSalesCost = exp.filter(r=>['Marketing','Sales'].includes(r.dept)).reduce((s,r)=>s+r.amount,0);
+  const newCusts = new Set(rev.filter(r=>r.ctype==='New' && r.customer).map(r=>r.customer)).size;
+  const totalCusts = new Set(rev.filter(r=>r.customer).map(r=>r.customer)).size;
+
+  // Monthly grouping
+  const monthly = {};
+  DATA.forEach(r => {
+    const mk = monthKey(r.date);
+    if (!monthly[mk]) monthly[mk] = {rev:0,exp:0,fixed:0,variable:0};
+    if (r.type==='Revenue') monthly[mk].rev += r.amount;
+    else { monthly[mk].exp += r.amount; if(r.costt==='Fixed') monthly[mk].fixed+=r.amount; if(r.costt==='Variable') monthly[mk].variable+=r.amount; }
+  });
+  const months = Object.keys(monthly).sort();
+  const latestMonth = months[months.length-1] || '';
+  const latestRev = latestMonth ? monthly[latestMonth].rev : 0;
+  const latestExp = latestMonth ? monthly[latestMonth].exp : 0;
+  const monthlyBurn = months.length > 0 ? totalExp / months.length : totalExp;
+
+  // Dept spend
+  const deptSpend = {};
+  exp.forEach(r => { if(r.dept){deptSpend[r.dept]=(deptSpend[r.dept]||0)+r.amount;} });
+
+  return {
+    totalRev, totalExp, profit: totalRev-totalExp,
+    varCost, fixedCost, mktSalesCost, newCusts, totalCusts,
+    margin: totalRev>0?(totalRev-totalExp)/totalRev:0,
+    cm: totalRev>0?(totalRev-varCost)/totalRev:0,
+    cac: newCusts>0?mktSalesCost/newCusts:0,
+    ltv: totalCusts>0?totalRev/totalCusts:0,
+    monthlyBurn, runway: monthlyBurn>0?OPENING_CASH/monthlyBurn:999,
+    latestRev, latestExp, monthly, months, deptSpend
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CHARTS STORE
+// ════════════════════════════════════════════════════════════════════
+const CHARTS = {};
+function destroyChart(id) { if(CHARTS[id]){CHARTS[id].destroy();delete CHARTS[id];} }
+function makeChart(id, config) { destroyChart(id); const ctx=document.getElementById(id); if(!ctx)return; CHARTS[id]=new Chart(ctx,config); }
+
+const COLORS = {
+  navy:'#1F3A5F', blue:'#4472C4', lightblue:'#9DC3E6',
+  green:'#2E7D32', lightgreen:'#81C784',
+  red:'#C62828', lightred:'#EF9A9A',
+  amber:'#E65100', yellow:'#FFA726',
+  grey:'#90A4AE',
+};
+
+// ════════════════════════════════════════════════════════════════════
+// RENDER DASHBOARD
+// ════════════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const C = calc();
+
+  // Status
+  let status = 'green', statusText = '● Healthy';
+  if (C.profit < 0 || C.runway < 3) { status='red'; statusText='● Critical'; }
+  else if (C.cm < 0.5) { status='amber'; statusText='● Warning'; }
+  document.getElementById('topbar-status').className=`status-badge ${status}`;
+  document.getElementById('topbar-status').textContent=statusText;
+  document.getElementById('dot-status').className=`status-dot ${status}`;
+
+  // KPIs
+  document.getElementById('d-rev').textContent=fmtK(C.totalRev);
+  document.getElementById('d-exp').textContent=fmtK(C.totalExp);
+  document.getElementById('d-profit').textContent=fmtK(C.profit);
+  document.getElementById('d-margin').textContent=pct(C.margin);
+  document.getElementById('d-cm').textContent=pct(C.cm);
+  document.getElementById('d-cac').textContent=C.cac>0?fmtK(C.cac):'No Data';
+  document.getElementById('d-ltv').textContent=fmtK(C.ltv);
+  document.getElementById('d-runway').textContent=C.runway>100?'Positive':C.runway.toFixed(1)+' mo';
+  document.getElementById('d-burn-sub').textContent=`Burn: ${fmtK(C.monthlyBurn)}/mo`;
+  document.getElementById('d-rev-sub').textContent=`Latest month: ${fmtK(C.latestRev)}`;
+  document.getElementById('d-exp-sub').textContent=`Fixed: ${fmtK(C.fixedCost)} | Var: ${fmtK(C.varCost)}`;
+
+  // Profit card color
+  const pk = document.getElementById('kpi-profit');
+  pk.className='kpi '+(C.profit>=0?'green':'red');
+  // Margin card
+  document.getElementById('kpi-margin').className='kpi '+(C.margin>=0.6?'green':C.margin>=0.4?'amber':'red');
+  // CM card
+  document.getElementById('kpi-cm').className='kpi '+(C.cm>=0.5?'green':C.cm>=0.35?'amber':'red');
+  // Runway
+  document.getElementById('kpi-runway').className='kpi '+(C.runway>6?'green':C.runway>3?'amber':'red');
+  document.getElementById('d-profit-sub').textContent=C.profit>=0?'Profitable ✓':'Loss making ✗';
+
+  // Chart: Revenue vs Expenses monthly
+  const months = C.months;
+  const revData = months.map(m=>C.monthly[m].rev);
+  const expData = months.map(m=>C.monthly[m].exp);
+  const profData = months.map(m=>C.monthly[m].rev-C.monthly[m].exp);
+
+  makeChart('chart-revexp', {
+    type:'bar',
+    data:{
+      labels: months.map(monthLabel),
+      datasets:[
+        {label:'Revenue',data:revData,backgroundColor:'rgba(46,125,50,0.8)',borderRadius:4},
+        {label:'Expenses',data:expData,backgroundColor:'rgba(198,40,40,0.7)',borderRadius:4},
+        {label:'Profit',data:profData,type:'line',borderColor:COLORS.navy,backgroundColor:'rgba(31,58,95,0.1)',pointRadius:4,tension:0.3,fill:true,yAxisID:'y'},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},scales:{y:{ticks:{callback:v=>fmtK(v),font:{size:9}},grid:{color:'#f0f4f8'}},x:{ticks:{font:{size:9}}}}}
+  });
+
+  // Chart: Dept spend
+  const depts = Object.entries(C.deptSpend).sort((a,b)=>b[1]-a[1]);
+  makeChart('chart-dept', {
+    type:'doughnut',
+    data:{
+      labels: depts.map(d=>d[0]),
+      datasets:[{data:depts.map(d=>d[1]),backgroundColor:['#1F3A5F','#C62828','#F9A825','#2E7D32','#4472C4','#7986CB','#90A4AE'],borderWidth:2,borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:10}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmtK(ctx.raw)} (${pct(ctx.raw/C.totalExp)})`}}}}
+  });
+
+  // Cost mix bars
+  const mixEl = document.getElementById('cost-mix-bars');
+  const fixedPct = C.totalExp>0?C.fixedCost/C.totalExp:0;
+  const varPct = C.totalExp>0?C.varCost/C.totalExp:0;
+  mixEl.innerHTML = `
+    <div class="bar-row"><div class="bar-lbl">Fixed</div><div class="bar-track"><div class="bar-fill" style="width:${fixedPct*100}%;background:${COLORS.navy}"><span>${pct(fixedPct)}</span></div></div><div class="bar-amt">${fmtK(C.fixedCost)}</div></div>
+    <div class="bar-row"><div class="bar-lbl">Variable</div><div class="bar-track"><div class="bar-fill" style="width:${varPct*100}%;background:${COLORS.amber}"><span>${pct(varPct)}</span></div></div><div class="bar-amt">${fmtK(C.varCost)}</div></div>
+    ${depts.slice(0,4).map(([d,v])=>`<div class="bar-row"><div class="bar-lbl">${d}</div><div class="bar-track"><div class="bar-fill" style="width:${v/C.totalExp*100}%;background:${COLORS.blue}"><span>${pct(v/C.totalExp)}</span></div></div><div class="bar-amt">${fmtK(v)}</div></div>`).join('')}
+  `;
+
+  // Customer revenue split
+  const custRev = {};
+  DATA.filter(r=>r.type==='Revenue'&&r.customer).forEach(r=>{custRev[r.customer]=(custRev[r.customer]||0)+r.amount;});
+  const topCusts = Object.entries(custRev).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const splitEl = document.getElementById('cust-split');
+  const top3Total = topCusts.slice(0,3).reduce((s,c)=>s+c[1],0);
+  splitEl.innerHTML=`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Top 3 = <strong style="color:var(--red)">${pct(top3Total/C.totalRev)}</strong> of revenue — concentration risk</div>`;
+  makeChart('chart-custsplit',{
+    type:'bar',
+    data:{labels:topCusts.map(c=>c[0]),datasets:[{data:topCusts.map(c=>c[1]),backgroundColor:[COLORS.navy,COLORS.blue,COLORS.lightblue,COLORS.grey,COLORS.grey],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v),font:{size:9}}},x:{ticks:{font:{size:9}}}}}
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RENDER DAILY LOG
+// ════════════════════════════════════════════════════════════════════
+function renderLog() {
+  const search = (document.getElementById('log-search')||{value:''}).value.toLowerCase();
+  const filterType = (document.getElementById('log-filter-type')||{value:''}).value;
+  let rows = [...DATA].sort((a,b)=>b.date.localeCompare(a.date));
+  if (search) rows = rows.filter(r=>[r.date,r.type,r.dept,r.project,r.customer,r.owner,r.notes].join(' ').toLowerCase().includes(search));
+  if (filterType) rows = rows.filter(r=>r.type===filterType);
+
+  document.getElementById('log-count').textContent=`(${rows.length} of ${DATA.length})`;
+  const tbody = document.getElementById('log-body');
+  tbody.innerHTML = rows.map((r,i)=>{
+    const realIdx = DATA.indexOf(r);
+    const typeTag = r.type==='Revenue'?'<span class="tag green">Revenue</span>':'<span class="tag red">Expense</span>';
+    const ctypeTag = r.ctype?`<span class="tag blue">${r.ctype}</span>`:'-';
+    const costtTag = r.costt?`<span class="tag grey">${r.costt}</span>`:'-';
+    return `<tr>
+      <td>${r.date}</td><td>${typeTag}</td>
+      <td class="fw-bold ${r.type==='Revenue'?'text-right':''}" style="color:${r.type==='Revenue'?'var(--green)':'var(--red)'}">${fmt(r.amount)}</td>
+      <td>${r.dept||'-'}</td><td>${r.project||'-'}</td><td>${r.customer||'-'}</td>
+      <td>${ctypeTag}</td><td>${costtTag}</td>
+      <td>${r.owner||'-'}</td><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.notes||''}">${r.notes||'-'}</td>
+      <td><button class="btn btn-danger" onclick="deleteRow(${realIdx})">×</button></td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="11" class="empty">No transactions found.</td></tr>';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ADD / DELETE ROWS
+// ════════════════════════════════════════════════════════════════════
+function addRow() {
+  const row = {
+    date: document.getElementById('f-date').value,
+    type: document.getElementById('f-type').value,
+    amount: parseFloat(document.getElementById('f-amount').value)||0,
+    dept: document.getElementById('f-dept').value,
+    project: document.getElementById('f-project').value,
+    customer: document.getElementById('f-customer').value,
+    ctype: document.getElementById('f-ctype').value,
+    costt: document.getElementById('f-costt').value,
+    owner: document.getElementById('f-owner').value,
+    notes: document.getElementById('f-notes').value,
+  };
+  const err = document.getElementById('log-error');
+  if (!row.date || !row.amount) { err.textContent='Date and Amount are required.'; err.style.display='block'; return; }
+  err.style.display='none';
+  DATA.push(row);
+  document.getElementById('f-amount').value='';
+  document.getElementById('f-project').value='';
+  document.getElementById('f-customer').value='';
+  document.getElementById('f-owner').value='';
+  document.getElementById('f-notes').value='';
+  refreshAll();
+}
+
+function addFromModal() {
+  const row = {
+    date: document.getElementById('m-date').value,
+    type: document.getElementById('m-type').value,
+    amount: parseFloat(document.getElementById('m-amount').value)||0,
+    dept: document.getElementById('m-dept').value,
+    project: document.getElementById('m-project').value,
+    customer: document.getElementById('m-customer').value,
+    ctype: document.getElementById('m-ctype').value,
+    costt: document.getElementById('m-costt').value,
+    owner: document.getElementById('m-owner').value,
+    notes: document.getElementById('m-notes').value,
+  };
+  const err = document.getElementById('modal-error');
+  if (!row.date || !row.amount) { err.textContent='Date and Amount are required.'; err.style.display='block'; return; }
+  err.style.display='none';
+  DATA.push(row);
+  closeModal();
+  refreshAll();
+}
+
+function deleteRow(idx) { if(confirm('Remove this transaction?')){DATA.splice(idx,1);refreshAll();} }
+
+// ════════════════════════════════════════════════════════════════════
+// RENDER ANALYSIS
+// ════════════════════════════════════════════════════════════════════
+function renderAnalysis() {
+  const C = calc();
+  const months = C.months;
+
+  // Trend chart
+  makeChart('chart-monthly-trend',{
+    type:'bar',
+    data:{labels:months.map(monthLabel),datasets:[
+      {label:'Revenue',data:months.map(m=>C.monthly[m].rev),backgroundColor:'rgba(46,125,50,0.8)',borderRadius:4},
+      {label:'Expenses',data:months.map(m=>C.monthly[m].exp),backgroundColor:'rgba(198,40,40,0.7)',borderRadius:4},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},scales:{y:{ticks:{callback:v=>fmtK(v),font:{size:9}}},x:{ticks:{font:{size:9}}}}}
+  });
+
+  // Profit trend
+  makeChart('chart-profit-trend',{
+    type:'line',
+    data:{labels:months.map(monthLabel),datasets:[{
+      label:'Net Profit',data:months.map(m=>C.monthly[m].rev-C.monthly[m].exp),
+      borderColor:COLORS.navy,backgroundColor:'rgba(31,58,95,0.1)',fill:true,tension:0.3,pointRadius:5,pointBackgroundColor:months.map(m=>C.monthly[m].rev-C.monthly[m].exp>=0?COLORS.green:COLORS.red)
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v),font:{size:9}}},x:{ticks:{font:{size:9}}}}}
+  });
+
+  // Monthly table
+  const mtbody = document.getElementById('monthly-tbody');
+  mtbody.innerHTML = months.map(m=>{
+    const d=C.monthly[m]; const net=d.rev-d.exp; const margin=d.rev>0?net/d.rev:0;
+    const tag=net>=0?'<span class="tag green">Profitable</span>':'<span class="tag red">Loss</span>';
+    return `<tr><td class="fw-bold">${monthLabel(m)}</td>
+      <td style="color:var(--green);font-weight:700">${fmt(d.rev)}</td>
+      <td style="color:var(--red)">${fmt(d.exp)}</td>
+      <td style="color:${net>=0?'var(--green)':'var(--red)'};font-weight:700">${fmt(net)}</td>
+      <td>${pct(margin)}</td>
+      <td>${fmt(d.fixed)}</td><td>${fmt(d.variable)}</td><td>${tag}</td>
+    </tr>`;
+  }).join('');
+
+  // Customer table
+  const custRev = {};
+  DATA.filter(r=>r.type==='Revenue'&&r.customer).forEach(r=>{
+    if(!custRev[r.customer]) custRev[r.customer]={rev:0,type:r.ctype};
+    custRev[r.customer].rev+=r.amount;
+  });
+  const custList = Object.entries(custRev).sort((a,b)=>b[1].rev-a[1].rev);
+  document.getElementById('cust-tbody').innerHTML = custList.slice(0,10).map(([c,d])=>`
+    <tr><td class="fw-bold">${c}</td>
+    <td style="font-weight:700;color:var(--green)">${fmt(d.rev)}</td>
+    <td>${pct(d.rev/C.totalRev)}</td>
+    <td><span class="tag ${d.type==='New'?'blue':'green'}">${d.type||'—'}</span></td>
+    </tr>`).join('');
+
+  // Marketing ROI
+  const mktRev={}, mktExp={};
+  months.forEach(m=>{
+    mktExp[m]=DATA.filter(r=>r.type==='Expense'&&r.dept==='Marketing'&&monthKey(r.date)===m).reduce((s,r)=>s+r.amount,0);
+    mktRev[m]=C.monthly[m].rev;
+  });
+  const mktEl = document.getElementById('mkt-roi-content');
+  mktEl.innerHTML = `<table class="tbl"><thead><tr><th>Month</th><th>Mkt Spend</th><th>Revenue</th><th>ROI</th><th>Signal</th></tr></thead><tbody>` +
+    months.map(m=>{
+      const roi=mktExp[m]>0?mktRev[m]/mktExp[m]:0;
+      const sig=roi>15?'<span class="tag green">Excellent</span>':roi>10?'<span class="tag blue">Good</span>':roi>5?'<span class="tag amber">Watch</span>':'<span class="tag red">Poor</span>';
+      return `<tr><td>${monthLabel(m)}</td><td>${fmt(mktExp[m])}</td><td>${fmt(mktRev[m])}</td><td style="font-weight:700">${roi.toFixed(1)}×</td><td>${sig}</td></tr>`;
+    }).join('') + '</tbody></table>' +
+    `<div style="margin-top:10px;font-size:11px;color:var(--muted)">📉 ROI declining: ${months.map(m=>`${monthLabel(m)}=${mktExp[m]>0?(mktRev[m]/mktExp[m]).toFixed(1)+'×':'N/A'}`).join(' → ')}</div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RENDER PROJECTS
+// ════════════════════════════════════════════════════════════════════
+function renderProjects() {
+  const projects = {};
+  DATA.forEach(r=>{
+    const p=r.project||'Unassigned';
+    if(!projects[p]) projects[p]={rev:0,exp:0,count:0};
+    if(r.type==='Revenue') projects[p].rev+=r.amount;
+    else { projects[p].exp+=r.amount; projects[p].count++; }
+  });
+  const pList = Object.entries(projects).sort((a,b)=>(b[1].rev-b[1].exp)-(a[1].rev-a[1].exp));
+  const C = calc();
+  document.getElementById('proj-tbody').innerHTML = pList.map(([p,d])=>{
+    const prof=d.rev-d.exp; const margin=d.rev>0?prof/d.rev:0;
+    const st=prof>0?'<span class="tag green">✓ Profitable</span>':d.rev===0?'<span class="tag grey">Cost Only</span>':'<span class="tag red">⚠ Loss</span>';
+    return `<tr>
+      <td class="fw-bold">${p}</td>
+      <td style="color:var(--green)">${d.rev>0?fmt(d.rev):'—'}</td>
+      <td style="color:var(--red)">${fmt(d.exp)}</td>
+      <td style="font-weight:700;color:${prof>=0?'var(--green)':'var(--red)'}">${d.rev>0?fmt(prof):'—'}</td>
+      <td>${d.rev>0?pct(margin):'—'}</td>
+      <td>${d.count} txns</td><td>${st}</td>
+    </tr>`;
+  }).join('');
+
+  const projLabels=pList.map(p=>p[0]);
+  const projExp=pList.map(p=>p[1].exp);
+  const projRev=pList.map(p=>p[1].rev);
+  makeChart('chart-proj',{
+    type:'bar',
+    data:{labels:projLabels,datasets:[
+      {label:'Revenue',data:projRev,backgroundColor:'rgba(46,125,50,0.8)',borderRadius:4},
+      {label:'Expenses',data:projExp,backgroundColor:'rgba(198,40,40,0.7)',borderRadius:4},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},scales:{y:{ticks:{callback:v=>fmtK(v),font:{size:9}}},x:{ticks:{font:{size:9}}}}}
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RENDER DEPARTMENTS
+// ════════════════════════════════════════════════════════════════════
+function renderDepartments() {
+  const C = calc();
+  const totalBudget = C.totalRev; // budget = forecasted revenue
+  const depts = Object.keys(DEPT_ALLOC);
+  let over=0,near=0,ok=0;
+
+  const rows = depts.map(d=>{
+    const alloc=DEPT_ALLOC[d];
+    const budget=totalBudget*alloc;
+    const actual=C.deptSpend[d]||0;
+    const variance=budget-actual;
+    const used=budget>0?actual/budget:0;
+    if(used>1)over++;else if(used>=0.8)near++;else ok++;
+    const st=used>1?'<span class="tag red">⚠ Overspend</span>':used>=0.8?'<span class="tag amber">▲ Near Limit</span>':'<span class="tag green">✓ On Track</span>';
+    const varColor=variance>=0?'var(--green)':'var(--red)';
+    return `<tr>
+      <td class="fw-bold">${d}</td>
+      <td>${pct(alloc)}</td>
+      <td>${fmt(budget)}</td>
+      <td style="font-weight:700">${fmt(actual)}</td>
+      <td style="color:${varColor};font-weight:700">${variance>=0?'+':''}${fmt(variance)}</td>
+      <td>${pct(used)}
+        <div class="prog-bar"><div class="prog-fill" style="width:${Math.min(used,1)*100}%;background:${used>1?'var(--red)':used>=0.8?'var(--amber)':'var(--green)'}"></div></div>
+      </td>
+      <td>${st}</td>
+    </tr>`;
+  });
+
+  document.getElementById('dept-tbody').innerHTML=rows.join('');
+  document.getElementById('dept-over').textContent=over;
+  document.getElementById('dept-near').textContent=near;
+  document.getElementById('dept-ok').textContent=ok;
+  document.getElementById('dept-total').textContent=fmtK(Object.values(C.deptSpend).reduce((s,v)=>s+v,0));
+
+  const deptLabels=Object.keys(C.deptSpend);
+  const deptVals=deptLabels.map(d=>C.deptSpend[d]);
+  makeChart('chart-dept-dist',{
+    type:'bar',
+    data:{labels:deptLabels,datasets:[{label:'Actual Spend',data:deptVals,backgroundColor:[COLORS.red,'#4472C4',COLORS.amber,COLORS.green,COLORS.blue,COLORS.grey,'#7986CB'],borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>fmtK(v),font:{size:9}}},x:{ticks:{font:{size:9}}}}}
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RENDER FORECAST
+// ════════════════════════════════════════════════════════════════════
+function renderForecast() {
+  const C = calc();
+  const revGrowth = (parseFloat(document.getElementById('a-revgrowth').value)||15)/100;
+  const expansion = (parseFloat(document.getElementById('a-expansion').value)||5)/100;
+  const churn = (parseFloat(document.getElementById('a-churn').value)||6)/100;
+  const expGrowth = (parseFloat(document.getElementById('a-expgrowth').value)||8)/100;
+  let openCash = parseFloat(document.getElementById('a-cash').value)||500000;
+
+  const FCST_MONTHS = ['Apr 2026','May 2026','Jun 2026'];
+  let openRev = C.latestRev || 368000;
+  let openExp = C.latestExp || 213500;
+  const revRows = [], cfRows = [];
+  const chartRev=[], chartExp=[], chartCash=[];
+
+  FCST_MONTHS.forEach((mo,i) => {
+    const newRev = openRev * revGrowth;
+    const expRev = openRev * expansion;
+    const churnRev = openRev * churn;
+    const netGrowth = newRev + expRev - churnRev;
+    const closeRev = openRev + netGrowth;
+    const expenses = i===0 ? openExp : cfRows[i-1].expenses * (1+expGrowth);
+    const netCF = closeRev - expenses;
+    const closeCash = openCash + netCF;
+    const runway = expenses>closeRev ? (closeCash/(expenses-closeRev)).toFixed(1)+' mo' : '∞ Positive';
+
+    revRows.push({mo,openRev,newRev,expRev,churnRev,closeRev});
+    cfRows.push({mo,expenses,netCF,openCash,closeCash,runway});
+    chartRev.push(closeRev); chartExp.push(expenses); chartCash.push(closeCash);
+
+    openRev=closeRev; openCash=closeCash;
+  });
+
+  // Revenue table
+  document.getElementById('fcst-rev-body').innerHTML = revRows.map((r,i)=>`
+    <tr>
+      <td class="fw-bold">${r.mo}</td>
+      <td>${fmt(r.openRev)}</td>
+      <td class="positive">+${fmt(r.newRev)}</td>
+      <td class="positive">+${fmt(r.expRev)}</td>
+      <td class="negative">−${fmt(r.churnRev)}</td>
+      <td class="fw-bold positive">${fmt(r.closeRev)}</td>
+    </tr>`).join('');
+
+  // CF table
+  document.getElementById('fcst-cf-body').innerHTML = cfRows.map(r=>`
+    <tr>
+      <td class="fw-bold">${r.mo}</td>
+      <td class="negative">${fmt(r.expenses)}</td>
+      <td class="${r.netCF>=0?'positive':'negative'} fw-bold">${r.netCF>=0?'+':''}${fmt(r.netCF)}</td>
+      <td>${fmt(r.openCash)}</td>
+      <td class="fw-bold">${fmt(r.closeCash)}</td>
+      <td class="${parseFloat(r.runway)<3?'negative':parseFloat(r.runway)<6?'':'positive'}">${r.runway}</td>
+    </tr>`).join('');
+
+  // Chart
+  const actMonths = C.months;
+  const allLabels = [...actMonths.map(monthLabel), ...FCST_MONTHS];
+  const actRevs = actMonths.map(m=>C.monthly[m].rev);
+  const actExps = actMonths.map(m=>C.monthly[m].exp);
+  const actCashs = actMonths.map((_,i)=>0); // not shown for historical
+
+  makeChart('chart-forecast',{
+    type:'line',
+    data:{
+      labels:allLabels,
+      datasets:[
+        {label:'Revenue',data:[...actRevs,...chartRev],borderColor:COLORS.green,backgroundColor:'rgba(46,125,50,0.08)',fill:true,tension:0.3,pointRadius:4,
+          segment:{borderDash:ctx=>ctx.p0DataIndex>=actMonths.length-1?[6,3]:undefined}},
+        {label:'Expenses',data:[...actExps,...chartExp],borderColor:COLORS.red,backgroundColor:'rgba(198,40,40,0.05)',fill:true,tension:0.3,pointRadius:4,
+          segment:{borderDash:ctx=>ctx.p0DataIndex>=actMonths.length-1?[6,3]:undefined}},
+        {label:'Cash Balance',data:[...Array(actMonths.length).fill(null),...chartCash],borderColor:COLORS.navy,backgroundColor:'transparent',tension:0.3,pointRadius:5,yAxisID:'y1',
+          segment:{borderDash:[6,3]}},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}},
+        annotation:{annotations:{line1:{type:'line',xMin:actMonths.length-0.5,xMax:actMonths.length-0.5,borderColor:'#90A4AE',borderWidth:1.5,borderDash:[4,4],label:{content:'Forecast →',enabled:true,position:'top',font:{size:9}}}}}},
+      scales:{y:{ticks:{callback:v=>fmtK(v),font:{size:9}}},y1:{type:'linear',position:'right',ticks:{callback:v=>fmtK(v),font:{size:9}},grid:{drawOnChartArea:false}},x:{ticks:{font:{size:9}}}}}
+  });
+
+  // Insight flags
+  const lastCF = cfRows[cfRows.length-1];
+  const insightEl = document.getElementById('fcst-insights');
+  const flags = [];
+  if(revGrowth > expGrowth) flags.push(`<div class="alert green">✅ Revenue growth (${pct(revGrowth)}) outpaces expense growth (${pct(expGrowth)}). Improving margins projected.</div>`);
+  else flags.push(`<div class="alert red">⚠️ Expense growth (${pct(expGrowth)}) exceeds revenue growth (${pct(revGrowth)}) — margin compression risk.</div>`);
+  if(parseFloat(lastCF.runway)<3) flags.push(`<div class="alert red">🚨 Runway below 3 months by Jun. Take immediate cash action.</div>`);
+  else if(lastCF.netCF<0) flags.push(`<div class="alert amber">⚠ Negative monthly cash flow projected. Monitor burn rate.</div>`);
+  else flags.push(`<div class="alert green">🟢 Cash position growing. Revenue exceeds expenses in projection period.</div>`);
+  insightEl.innerHTML = flags.join('');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RENDER INSIGHTS (AI RULES ENGINE)
+// ════════════════════════════════════════════════════════════════════
+function renderInsights() {
+  const C = calc();
+  const months = C.months;
+  const latestM = months[months.length-1];
+  const prevM = months[months.length-2];
+
+  // Derived facts
+  const mktSpend = DATA.filter(r=>r.type==='Expense'&&r.dept==='Marketing').reduce((s,r)=>s+r.amount,0);
+  const hrSpend = DATA.filter(r=>r.type==='Expense'&&r.dept==='HR').reduce((s,r)=>s+r.amount,0);
+  const latestMktSpend = DATA.filter(r=>r.type==='Expense'&&r.dept==='Marketing'&&monthKey(r.date)===latestM).reduce((s,r)=>s+r.amount,0);
+  const prevMktSpend = prevM?DATA.filter(r=>r.type==='Expense'&&r.dept==='Marketing'&&monthKey(r.date)===prevM).reduce((s,r)=>s+r.amount,0):0;
+  const mktROIDeclining = latestMktSpend > prevMktSpend && C.monthly[latestM]?.rev < (C.monthly[prevM]?.rev||0)*1.3;
+  const hrHighPct = hrSpend/C.totalRev > 0.25;
+  const top3Custs = Object.entries(
+    DATA.filter(r=>r.type==='Revenue'&&r.customer).reduce((a,r)=>{a[r.customer]=(a[r.customer]||0)+r.amount;return a;},{})
+  ).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const top3Conc = top3Custs.reduce((s,c)=>s+c[1],0)/C.totalRev;
+
+  const critical=[], warnings=[], positive=[], recs=[];
+
+  // CRITICAL
+  if(C.profit<0) critical.push({icon:'🚨',title:'Company is Overspending',body:`Total expenses (${fmtK(C.totalExp)}) exceed revenue (${fmtK(C.totalRev)}) by ${fmtK(Math.abs(C.profit))}. Immediate action required.`,action:'Freeze all discretionary spend. Identify ₹50K+ in monthly cuts before next payroll.'});
+  if(C.runway<3) critical.push({icon:'🚨',title:'Critical Cash Risk — Runway < 3 Months',body:`At current burn of ${fmtK(C.monthlyBurn)}/month with ₹5L cash, runway is ${C.runway.toFixed(1)} months. This is the most urgent financial threat.`,action:'Prioritize collecting ₹3.68L in pending AR immediately. Defer all non-critical payments.'});
+  if(top3Conc>0.5) critical.push({icon:'🚨',title:`Revenue Concentration Risk — Top 3 Clients = ${pct(top3Conc)}`,body:`${top3Custs.map(c=>c[0]).join(', ')} account for ${pct(top3Conc)} of all revenue. Losing any one is catastrophic.`,action:'Build a customer success playbook for these 3 accounts. Offer 2-year contracts at a 10% discount to lock them in.'});
+
+  // WARNINGS
+  if(C.cm<0.5) warnings.push({icon:'⚠️',title:`Low Contribution Margin — ${pct(C.cm)} (Target: >50%)`,body:`Variable costs at ${fmtK(C.varCost)} reduce contribution margin below the 50% threshold. Profitability is structurally weak.`,action:'Audit all variable costs. Marketing ROI declining — pause influencer spend (₹18K) and redirect to high-ROI channels.'});
+  if(hrHighPct) warnings.push({icon:'⚠️',title:`HR Cost = ${pct(hrSpend/C.totalRev)} of Revenue (Target: <25%)`,body:`HR spending ${fmtK(hrSpend)} is ${pct(hrSpend/C.totalRev)} of total revenue. Personnel costs are the largest single cost driver at 53% of expenses.`,action:'Freeze non-critical hires. Each new hire must have a revenue impact model showing ₹3–5L ARR contribution.'});
+  if(mktROIDeclining) warnings.push({icon:'⚠️',title:'Marketing Spend Rising, Revenue ROI Declining',body:'Marketing tripled (₹12K→₹38.5K) but revenue ROI fell from 21.5× to 9.6×. Brand redesign and influencer spend (₹30.5K) have zero attribution data.',action:'Pause brand and influencer spend. Add UTM source tracking. Redirect to direct enterprise outbound — proven channel for your top customers.'});
+  if(C.deptSpend['Management']>0 && C.deptSpend['Management']/C.totalRev>0.07) warnings.push({icon:'⚠️',title:'Management Salary Escalating 27% in 3 Months',body:`Founder pay grew ₹22K→₹25K→₹28K (+27%) while runway is under 3 months. Including a bonus in March during cash constraint is misaligned with financial health.`,action:'Defer discretionary compensation increases until runway exceeds 6 months. Reinvest founder savings into customer acquisition.'});
+
+  // POSITIVE
+  if(C.monthly[latestM]?.rev > (C.monthly[prevM]?.rev||0)) positive.push({icon:'✅',title:`Revenue Growing — ${pct((C.monthly[latestM].rev-(C.monthly[prevM]?.rev||0))/(C.monthly[prevM]?.rev||1))} MoM in ${monthLabel(latestM)}`,body:'Revenue trend is positive — growing from ₹2.58L (Jan) to ₹3.68L (Mar). Enterprise segment is the primary driver.',action:'Double down on enterprise segment. Ankit\'s close rate on enterprise deals is the highest-ROI activity.'});
+  if(C.cac<50000 && C.cac>0) positive.push({icon:'✅',title:`CAC Efficient — ${fmtK(C.cac)} per New Customer`,body:'Customer acquisition cost is below the ₹50K benchmark. Founder-led sales is highly efficient at this stage.',action:'Document the enterprise sales playbook before it becomes tacit knowledge. Scale the proven ICP profile.'});
+  const entRev = DATA.filter(r=>r.type==='Revenue'&&r.project==='Enterprise').reduce((s,r)=>s+r.amount,0);
+  const smbRev = DATA.filter(r=>r.type==='Revenue'&&r.project==='SMB').reduce((s,r)=>s+r.amount,0);
+  if(entRev>smbRev) positive.push({icon:'✅',title:`Enterprise Segment = ${pct(entRev/(entRev+smbRev))} of Revenue`,body:`Enterprise customers generate ${fmtK(entRev/6)}/customer vs ${fmtK(smbRev/7)}/customer for SMB — a 3.4× revenue premium.`,action:'Raise enterprise pricing 15–20% at next contract renewal. Add ₹1.5L–₹2L Premium tier with SLA.'});
+
+  // RECS
+  recs.push({icon:'💡',title:'Top 5 Actionable Recommendations',body:`
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+      <div><strong>1. Collect ₹3.68L AR this week</strong> — HDFC Digital (₹1.6L) is highest priority. 2% early payment discount offer.</div>
+      <div><strong>2. Fix churn first</strong> — ₹1.85L in recurring revenue lost in 2 months. Call every churned customer. Assign CS owner.</div>
+      <div><strong>3. Freeze hiring, audit HR</strong> — HR at 426% of budget. Each hire needs revenue impact model before approval.</div>
+      <div><strong>4. Kill duplicate monitoring tools</strong> — Datadog + New Relic = ₹10K/quarter wasted. Keep one.</div>
+      <div><strong>5. Switch SMB to annual contracts</strong> — Monthly SMB billing enables cheap churn. Floor at ₹35K/year with annual commitment.</div>
+    </div>
+  `,action:'Monthly savings potential: ₹96K–₹1.6L from all actions combined.'});
+
+  const renderSection = (el, items, variant) => {
+    document.getElementById(el).innerHTML = items.length ? items.map(i=>`
+      <div class="insight ${variant}">
+        <div class="insight-icon">${i.icon}</div>
+        <div>
+          <div class="insight-title">${i.title}</div>
+          <div class="insight-body">${i.body}</div>
+          ${i.action?`<div class="insight-action">→ ${i.action}</div>`:''}
+        </div>
+      </div>`).join('') : '';
+    if(items.length){
+      const hdr = document.createElement('div');
+      hdr.className='sec-bar';
+      hdr.style.marginBottom='10px';
+      hdr.textContent = {critical:'🚨 Critical Issues',warnings:'⚠ Warnings',positive:'✅ Positives',recs:'💡 Recommendations'}[variant]||variant;
+      document.getElementById(el).prepend(hdr);
+    }
+  };
+  renderSection('insights-critical',critical,'critical');
+  renderSection('insights-warnings',warnings,'warnings');
+  renderSection('insights-positive',positive,'positive');
+  renderSection('insights-recs',recs,'recs');
+
+  // Fix variant mapping
+  ['critical','warnings','positive','recs'].forEach((v,i)=>{
+    document.querySelectorAll(`#insights-${v} .insight`).forEach(el=>{
+      el.classList.remove('critical','warnings','positive','recs');
+      el.classList.add(v==='critical'?'red':v==='warnings'?'amber':v==='positive'?'green':'blue');
+    });
+    const bar=document.querySelector(`#insights-${v} .sec-bar`);
+    if(bar){bar.style.background=v==='critical'?'var(--red)':v==='warnings'?'var(--amber)':v==='positive'?'var(--green)':'var(--navy)'}
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// RENDER CASH FLOW
+// ════════════════════════════════════════════════════════════════════
+function renderCashFlow() {
+  const C = calc();
+  const months = C.months;
+  document.getElementById('cf-in').textContent=fmtK(C.totalRev);
+  document.getElementById('cf-out').textContent=fmtK(C.totalExp);
+  document.getElementById('cf-net').textContent=fmtK(C.profit);
+  document.getElementById('cf-net-kpi').className='kpi '+(C.profit>=0?'green':'red');
+  document.getElementById('cf-bal').textContent=fmtK(OPENING_CASH+C.profit);
+
+  let runBal = OPENING_CASH;
+  const cfRows = months.map(m=>{
+    const d=C.monthly[m];
+    const net=d.rev-d.exp;
+    runBal+=net;
+    return {m,d,net,runBal};
+  });
+
+  document.getElementById('cf-tbody').innerHTML=cfRows.map(({m,d,net,runBal})=>`
+    <tr>
+      <td class="fw-bold">${monthLabel(m)}</td>
+      <td style="color:var(--green)">${fmt(d.rev)}</td>
+      <td style="color:var(--red)">${fmt(d.exp)}</td>
+      <td style="font-weight:700;color:${net>=0?'var(--green)':'var(--red)'}">${net>=0?'+':''}${fmt(net)}</td>
+      <td style="font-weight:700">${fmt(runBal)}</td>
+      <td>${runBal>OPENING_CASH*1.2?'<span class="tag green">Growing</span>':runBal>0?'<span class="tag amber">Stable</span>':'<span class="tag red">Depleting</span>'}</td>
+    </tr>`).join('');
+
+  makeChart('chart-cf',{
+    type:'bar',
+    data:{labels:months.map(monthLabel),datasets:[
+      {label:'Inflow',data:months.map(m=>C.monthly[m].rev),backgroundColor:'rgba(46,125,50,0.8)',borderRadius:4},
+      {label:'Outflow',data:months.map(m=>-C.monthly[m].exp),backgroundColor:'rgba(198,40,40,0.7)',borderRadius:4},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:10},boxWidth:10}}},scales:{y:{ticks:{callback:v=>fmtK(Math.abs(v)),font:{size:9}}},x:{ticks:{font:{size:9}}}}}
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════════
+const PAGE_TITLES = {
+  dashboard:'Dashboard',log:'Daily Log',analysis:'Financial Analysis',
+  projects:'Project Tracker',departments:'Department Tracker',
+  forecast:'3-Month Forecast',insights:'AI Insights',cashflow:'Cash Flow'
+};
+
+function nav(id) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const page = document.getElementById('page-'+id);
+  if(page) page.classList.add('active');
+  event.currentTarget.classList.add('active');
+  document.getElementById('topbar-title').textContent=PAGE_TITLES[id]||id;
+  renderPage(id);
+}
+
+function renderPage(id) {
+  if(id==='dashboard') renderDashboard();
+  else if(id==='log') renderLog();
+  else if(id==='analysis') renderAnalysis();
+  else if(id==='projects') renderProjects();
+  else if(id==='departments') renderDepartments();
+  else if(id==='forecast') renderForecast();
+  else if(id==='insights') renderInsights();
+  else if(id==='cashflow') renderCashFlow();
+}
+
+function refreshAll() {
+  const activePage = document.querySelector('.page.active');
+  const activePageId = activePage?activePage.id.replace('page-',''):'dashboard';
+  renderPage(activePageId);
+  // Always update dashboard status dot
+  renderDashboard();
+  if(activePageId!=='dashboard') renderPage(activePageId);
+}
+
+// ════════════════════════════════════════════════════════════════════
+// MODAL
+// ════════════════════════════════════════════════════════════════════
+function openModal() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('m-date').value=today;
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal() { document.getElementById('modal').style.display='none'; }
+
+// ════════════════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value=today;
+  document.getElementById('topbar-date').textContent=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+  renderDashboard();
+  renderLog();
+});
+</script>
+</body>
+</html>

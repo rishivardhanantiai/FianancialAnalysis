@@ -36,12 +36,25 @@ export default function Layout({ title, subtitle, children }: LayoutProps) {
               <p className="text-xs text-blue-mid mt-0.5">{subtitle}</p>
             )}
           </div>
-          <div className="text-xs text-blue-mid">
-            {new Date().toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
+          <div className="flex items-center gap-4">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+              ● Critical
+            </span>
+
+            <div className="text-xs text-blue-mid">
+              {new Date().toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </div>
+
+            <button
+              onClick={() => navigate("/log")}
+              className="ml-2 bg-slate-800 text-white text-sm px-3 py-1.5 rounded-md hover:brightness-95"
+            >
+              + Add Transaction
+            </button>
           </div>
         </div>
 

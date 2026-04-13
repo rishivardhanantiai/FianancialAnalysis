@@ -122,18 +122,18 @@ export default function FinancialAnalysis() {
             Monthly Revenue & Expense Trend
           </h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
-              <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 12 }} />
-              <YAxis stroke="#5a718a" style={{ fontSize: 12 }} />
-              <Tooltip
-                formatter={(value) => formatCurrency(value as number)}
-                contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}
-              />
-              <Legend />
-              <Bar dataKey="revenue" fill="#2E7D32" radius={4} />
-              <Bar dataKey="expenses" fill="#C62828" radius={4} />
-            </BarChart>
+              <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
+                <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 12 }} />
+                <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
+                <Tooltip
+                  formatter={(value) => formatCurrency(value as number)}
+                  contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}
+                />
+                <Legend />
+                <Bar dataKey="revenue" fill="#2E7D32" radius={4} />
+                <Bar dataKey="expenses" fill="#C62828" radius={4} />
+              </BarChart>
           </ResponsiveContainer>
         </div>
 
@@ -143,10 +143,10 @@ export default function FinancialAnalysis() {
             Profit Trend
           </h3>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={profitData}>
+            <LineChart data={profitData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
               <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 12 }} />
-              <YAxis stroke="#5a718a" style={{ fontSize: 12 }} />
+              <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
               <Tooltip
                 formatter={(value) => formatCurrency(value as number)}
                 contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}
