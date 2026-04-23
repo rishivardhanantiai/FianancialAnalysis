@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { transactionSchema } from "../../shared/schema";
 
 type VercelRequest = {
   method?: string;
@@ -26,6 +25,40 @@ function getSupabaseClient() {
       autoRefreshToken: false,
     },
   });
+}
+
+function validateTransactionPayload(body: any) {
+  const type = body?.type;
+  const amount = Number(body?.amount);
+  const date = typeof body?.date === "string" ? body.date.trim() : "";
+
+  if (!date) {
+    return { ok: false, error: "Date is required" };
+  }
+
+  if (type !== "Revenue" && type !== "Expense") {
+    return { ok: false, error: "Type must be Revenue or Expense" };
+  }
+
+  if (Number.isNaN(amount) || amount < 0) {
+    return { ok: false, error: "Amount must be a positive number" };
+  }
+
+  return {
+    ok: true,
+    value: {
+      date,
+      type,
+      amount,
+      dept: typeof body?.dept === "string" ? body.dept : "",
+      project: typeof body?.project === "string" ? body.project : "",
+      customer: typeof body?.customer === "string" ? body.customer : "",
+      ctype: typeof body?.ctype === "string" ? body.ctype : "",
+      costt: typeof body?.costt === "string" ? body.costt : "",
+      owner: typeof body?.owner === "string" ? body.owner : "",
+      notes: typeof body?.notes === "string" ? body.notes : "",
+    },
+  };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -55,30 +88,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === "POST") {
-      const parsed = transactionSchema.safeParse(req.body);
-      if (!parsed.success) {
+      const validation = validateTransactionPayload(req.body);
+      if (!validation.ok) {
         return res.status(400).json({
           error: "Invalid transaction payload",
-          details: parsed.error.flatten(),
+          details: validation.error,
         });
       }
 
-      const payload = {
-        date: parsed.data.date,
-        type: parsed.data.type,
-        amount: parsed.data.amount,
-        dept: parsed.data.dept ?? "",
-        project: parsed.data.project ?? "",
-        customer: parsed.data.customer ?? "",
-        ctype: parsed.data.ctype ?? "",
-        costt: parsed.data.costt ?? "",
-        owner: parsed.data.owner ?? "",
-        notes: parsed.data.notes ?? "",
-      };
-
       const { data, error } = await supabase
         .from("transactions")
-        .insert(payload)
+        .insert(validation.value)
         .select("*")
         .single();
 
