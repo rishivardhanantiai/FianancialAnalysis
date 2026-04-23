@@ -17,15 +17,15 @@ export function createServer() {
   app.use(express.urlencoded({ extended: true }));
 
   // Example API routes
-  app.get("/api/ping", (_req, res) => {
+  app.get(["/api/ping", "/ping"], (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
   });
 
-  app.get("/api/demo", handleDemo);
-  app.get("/api/transactions", listTransactions);
-  app.post("/api/transactions", createTransaction);
-  app.delete("/api/transactions/:id", deleteTransaction);
+  app.get(["/api/demo", "/demo"], handleDemo);
+  app.get(["/api/transactions", "/transactions"], listTransactions);
+  app.post(["/api/transactions", "/transactions"], createTransaction);
+  app.delete(["/api/transactions/:id", "/transactions/:id"], deleteTransaction);
 
   return app;
 }
