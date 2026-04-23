@@ -319,7 +319,8 @@ export default function Index() {
     <div className="shell">
       <nav className="sidebar">
         <div className="brand">
-          <div className="brand-name">⚡ ANTI AI</div>
+          <img src="/logo.jpg" alt="ANTI AI Logo" className="brand-logo" />
+          <div className="brand-name">ANTI AI</div>
           <div className="brand-sub">Command Center</div>
         </div>
         <div className="nav-section">Core</div>

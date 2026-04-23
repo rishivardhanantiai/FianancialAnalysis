@@ -56,7 +56,7 @@ export default function Sidebar() {
       {/* Brand */}
       <div className="p-4 border-b border-navy-light flex flex-col items-center">
         <img
-          src="https://cdn.builder.io/api/v1/image/assets%2F48a828bb4e9c4aeab85468fbbc252b37%2F0715bee5fad84e1a88b420b589f8c0e0?format=webp&width=200&height=200"
+          src="/logo.jpg"
           alt="ANTI AI Logo"
           className="w-12 h-12 mb-2"
         />

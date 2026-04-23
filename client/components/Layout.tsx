@@ -30,11 +30,18 @@ export default function Layout({ title, subtitle, children }: LayoutProps) {
       <div className="flex-1 flex flex-col ml-56 overflow-hidden">
         {/* Topbar */}
         <div className="bg-white border-b border-blue-pale px-6 py-3 flex items-center justify-between flex-shrink-0">
-          <div>
+          <div className="flex items-center gap-3">
+            <img
+              src="/logo.jpg"
+              alt="ANTI AI Logo"
+              className="w-9 h-9 rounded-md object-cover border border-blue-pale"
+            />
+            <div>
             <h1 className="text-base font-bold text-navy">{title}</h1>
             {subtitle && (
               <p className="text-xs text-blue-mid mt-0.5">{subtitle}</p>
             )}
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
