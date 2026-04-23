@@ -10,3 +10,39 @@
 export interface DemoResponse {
   message: string;
 }
+
+export interface TransactionRecord {
+  id: string;
+  date: string;
+  type: "Revenue" | "Expense";
+  amount: number;
+  dept: string;
+  project: string;
+  customer: string;
+  ctype: string;
+  costt: string;
+  owner: string;
+  notes: string;
+  created_at?: string;
+}
+
+export interface TransactionsListResponse {
+  transactions: TransactionRecord[];
+}
+
+export interface TransactionCreateRequest {
+  date: string;
+  type: "Revenue" | "Expense";
+  amount: number;
+  dept: string;
+  project: string;
+  customer: string;
+  ctype: string;
+  costt: string;
+  owner: string;
+  notes: string;
+}
+
+export interface TransactionCreateResponse {
+  transaction: TransactionRecord;
+}

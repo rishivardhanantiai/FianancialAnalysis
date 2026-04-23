@@ -2,6 +2,12 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import Chart from "chart.js/auto";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  TransactionCreateRequest,
+  TransactionCreateResponse,
+  TransactionRecord,
+  TransactionsListResponse,
+} from "@shared/api";
 
 // ════════════════════════════════════════════════════════════════════
 // DATA STORE & CONSTANTS
@@ -17,7 +23,9 @@ const DEPT_ALLOC: Record<string, number> = {
 };
 const OPENING_CASH = 500000;
 
-const INITIAL_DATA = [
+type FinanceTransaction = TransactionRecord;
+
+const INITIAL_DATA: Array<Omit<FinanceTransaction, 'id' | 'created_at'>> = [
   {date:'2026-01-03',type:'Revenue',amount:120000,dept:'Sales',project:'Enterprise',customer:'Reliance Ltd',ctype:'New',costt:'',owner:'Ankit',notes:'Enterprise annual deal'},
   {date:'2026-01-05',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Jan'},
   {date:'2026-01-07',type:'Revenue',amount:28000,dept:'Sales',project:'SMB',customer:'Infosys SMB',ctype:'New',costt:'',owner:'Priya',notes:'Starter plan signup'},
@@ -67,6 +75,14 @@ const INITIAL_DATA = [
   {date:'2026-03-28',type:'Expense',amount:5500,dept:'Marketing',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'New website design'},
   {date:'2026-03-30',type:'Expense',amount:4000,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'End of month infra'},
 ];
+
+const FALLBACK_DATA: FinanceTransaction[] = INITIAL_DATA.map((row, index) => ({
+  id: `local-${index}`,
+  ...row,
+  ctype: row.ctype ?? '',
+  costt: row.costt ?? '',
+  created_at: new Date().toISOString(),
+}));
 
 const COLORS = {
   navy:'#1F3A5F', blue:'#4472C4', lightblue:'#9DC3E6',
@@ -141,7 +157,9 @@ export default function Index() {
     }
   }, [isAuthenticated, navigate]);
 
-  const [data, setData] = useState(INITIAL_DATA);
+  const [data, setData] = useState<FinanceTransaction[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [syncError, setSyncError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const C = useMemo(() => runCalc(data), [data]);
@@ -163,20 +181,123 @@ export default function Index() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('');
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTransactions = async () => {
+      try {
+        setIsLoadingData(true);
+        setSyncError("");
+        const response = await fetch('/api/transactions');
+        if (!response.ok) {
+          throw new Error(`Failed to load transactions (${response.status})`);
+        }
+
+        const payload: TransactionsListResponse = await response.json();
+        if (isMounted) {
+          setData(payload.transactions ?? []);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setSyncError(
+            error instanceof Error
+              ? error.message
+              : 'Failed to sync with server',
+          );
+          // Keep demo records as a fallback so UI remains usable while setup is incomplete.
+          setData(FALLBACK_DATA);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingData(false);
+        }
+      }
+    };
+
+    loadTransactions();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const createTransaction = async (txn: TransactionCreateRequest) => {
+    const response = await fetch('/api/transactions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(txn),
+    });
+
+    if (!response.ok) {
+      const errorPayload = await response.json().catch(() => ({ error: 'Failed to create transaction' }));
+      throw new Error(errorPayload.error || 'Failed to create transaction');
+    }
+
+    const payload: TransactionCreateResponse = await response.json();
+    setData((prev) => [payload.transaction, ...prev]);
+    setSyncError("");
+  };
+
+  const removeTransaction = async (id: string) => {
+    const response = await fetch(`/api/transactions/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorPayload = await response.json().catch(() => ({ error: 'Failed to delete transaction' }));
+      throw new Error(errorPayload.error || 'Failed to delete transaction');
+    }
+
+    setData((prev) => prev.filter((row) => row.id !== id));
+    setSyncError("");
+  };
+
   const handleAdd = () => {
     if (!date || !amount) { setFormErr('Date and Amount are required.'); return; }
     setFormErr('');
-    setData(prev => [...prev, {
-      date, type, amount: parseFloat(amount)||0, dept, project, customer, ctype, costt, owner, notes
-    }]);
-    setAmount(''); setProject(''); setCustomer(''); setOwner(''); setNotes('');
-    setIsModalOpen(false);
+
+    createTransaction({
+      date,
+      type: type as "Revenue" | "Expense",
+      amount: parseFloat(amount) || 0,
+      dept,
+      project,
+      customer,
+      ctype,
+      costt,
+      owner,
+      notes,
+    })
+      .then(() => {
+        setAmount('');
+        setProject('');
+        setCustomer('');
+        setOwner('');
+        setNotes('');
+        setIsModalOpen(false);
+      })
+      .catch((error) => {
+        setFormErr(error instanceof Error ? error.message : 'Failed to add transaction');
+      });
   };
 
   const nav = (id: string) => navigate(id === 'dashboard' ? '/' : `/${id}`);
 
   const renderDashboard = () => <DashboardTab data={data} C={C} />;
-  const renderLog = () => <LogTab data={data} setData={setData} search={search} setSearch={setSearch} filterType={filterType} setFilterType={setFilterType} />;
+  const renderLog = () => (
+    <LogTab
+      data={data}
+      search={search}
+      setSearch={setSearch}
+      filterType={filterType}
+      setFilterType={setFilterType}
+      onCreate={createTransaction}
+      onDelete={removeTransaction}
+      isLoadingData={isLoadingData}
+      syncError={syncError}
+    />
+  );
   const renderAnalysis = () => <AnalysisTab data={data} C={C} />;
   const renderProjects = () => <ProjectsTab data={data} C={C} />;
   const renderDepartments = () => <DepartmentsTab data={data} C={C} />;
@@ -364,27 +485,56 @@ function DashboardTab({ data, C }: any) {
   );
 }
 
-function LogTab({ data, setData, search, setSearch, filterType, setFilterType }: any) {
+function LogTab({
+  data,
+  search,
+  setSearch,
+  filterType,
+  setFilterType,
+  onCreate,
+  onDelete,
+  isLoadingData,
+  syncError,
+}: any) {
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], type: 'Revenue', amount: '', dept: '', project: '', customer: '', ctype: '', costt: '', owner: '', notes: '' });
 
   let rows = [...data].sort((a,b)=>b.date.localeCompare(a.date));
   if (search) rows = rows.filter(r=>[r.date,r.type,r.dept,r.project,r.customer,r.owner,r.notes].join(' ').toLowerCase().includes(search.toLowerCase()));
   if (filterType) rows = rows.filter(r=>r.type===filterType);
 
-  const deleteRow = (r: any) => {
-    if(confirm('Remove this transaction?')) setData((prev: any) => prev.filter((x: any) => x !== r));
+  const deleteRow = async (r: any) => {
+    if (!confirm('Remove this transaction?')) {
+      return;
+    }
+
+    if (!r.id) {
+      alert('Unable to delete: missing transaction id');
+      return;
+    }
+
+    try {
+      await onDelete(r.id);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to delete transaction');
+    }
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!form.amount || isNaN(Number(form.amount))) return alert("Valid amount required");
-    setData((prev: any) => [{ ...form, amount: Number(form.amount) }, ...prev]);
-    setForm(f => ({ ...f, amount: '', notes: '', project: '', customer: '' }));
+    try {
+      await onCreate({ ...form, amount: Number(form.amount), type: form.type as 'Revenue' | 'Expense' });
+      setForm(f => ({ ...f, amount: '', notes: '', project: '', customer: '' }));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to add transaction');
+    }
   };
 
   return (
     <>
       <div className="page-title">Daily Transaction Log</div>
       <div className="page-sub">Single source of truth · Every row instantly updates all dashboards</div>
+      {isLoadingData && <div className="alert blue" style={{ marginBottom: '12px' }}>Syncing transactions from server...</div>}
+      {syncError && <div className="alert red" style={{ marginBottom: '12px' }}>Server sync issue: {syncError}</div>}
       
       <div className="box mb-16">
         <div className="box-title">Quick Add Transaction</div>

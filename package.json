@@ -8,11 +8,13 @@
     "build:client": "vite build",
     "build:server": "vite build --config vite.config.server.ts",
     "start": "node dist-server/node-build.mjs",
+    "seed:transactions": "tsx scripts/seed-transactions.ts",
     "test": "vitest --run",
     "format.fix": "prettier --write .",
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.104.1",
     "chart.js": "^4.5.1",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",

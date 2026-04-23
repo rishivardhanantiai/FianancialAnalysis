@@ -2,6 +2,11 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
+import {
+  createTransaction,
+  deleteTransaction,
+  listTransactions,
+} from "./routes/transactions";
 
 export function createServer() {
   const app = express();
@@ -18,6 +23,9 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+  app.get("/api/transactions", listTransactions);
+  app.post("/api/transactions", createTransaction);
+  app.delete("/api/transactions/:id", deleteTransaction);
 
   return app;
 }
