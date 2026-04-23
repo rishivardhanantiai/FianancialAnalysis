@@ -1,5 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
-
 type VercelRequest = {
   method?: string;
   query?: { id?: string | string[] };
@@ -11,7 +9,7 @@ type VercelResponse = {
   setHeader: (name: string, value: string) => void;
 };
 
-function getSupabaseClient() {
+function getSupabaseConfig() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -19,12 +17,7 @@ function getSupabaseClient() {
     throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  return { supabaseUrl, serviceRoleKey };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -46,11 +39,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Transaction id is required" });
     }
 
-    const supabase = getSupabaseClient();
-    const { error } = await supabase.from("transactions").delete().eq("id", id);
+    const { supabaseUrl, serviceRoleKey } = getSupabaseConfig();
+    const response = await fetch(
+      `${supabaseUrl}/rest/v1/transactions?id=eq.${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+          Prefer: "return=minimal",
+        },
+      },
+    );
 
-    if (error) {
-      return res.status(500).json({ error: error.message });
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(500).json({ error: errorText || "Failed to delete transaction" });
     }
 
     return res.status(200).json({ success: true });

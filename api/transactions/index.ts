@@ -1,5 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
-
 type VercelRequest = {
   method?: string;
   body?: any;
@@ -11,7 +9,7 @@ type VercelResponse = {
   setHeader: (name: string, value: string) => void;
 };
 
-function getSupabaseClient() {
+function getSupabaseConfig() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -19,12 +17,7 @@ function getSupabaseClient() {
     throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  return { supabaseUrl, serviceRoleKey };
 }
 
 function validateTransactionPayload(body: any) {
@@ -71,19 +64,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const supabase = getSupabaseClient();
+    const { supabaseUrl, serviceRoleKey } = getSupabaseConfig();
+    const headers = {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json",
+    };
 
     if (req.method === "GET") {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select("*")
-        .order("date", { ascending: false })
-        .order("created_at", { ascending: false });
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/transactions?select=*&order=date.desc,created_at.desc`,
+        { headers },
+      );
 
-      if (error) {
-        return res.status(500).json({ error: error.message });
+      if (!response.ok) {
+        const errorText = await response.text();
+        return res.status(500).json({ error: errorText || "Failed to fetch transactions" });
       }
 
+      const data = await response.json();
       return res.status(200).json({ transactions: data ?? [] });
     }
 
@@ -96,17 +95,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
 
-      const { data, error } = await supabase
-        .from("transactions")
-        .insert(validation.value)
-        .select("*")
-        .single();
+      const response = await fetch(`${supabaseUrl}/rest/v1/transactions`, {
+        method: "POST",
+        headers: {
+          ...headers,
+          Prefer: "return=representation",
+        },
+        body: JSON.stringify(validation.value),
+      });
 
-      if (error) {
-        return res.status(500).json({ error: error.message });
+      if (!response.ok) {
+        const errorText = await response.text();
+        return res.status(500).json({ error: errorText || "Failed to create transaction" });
       }
 
-      return res.status(201).json({ transaction: data });
+      const rows = await response.json();
+      const transaction = Array.isArray(rows) ? rows[0] : rows;
+
+      return res.status(201).json({ transaction });
     }
 
     return res.status(405).json({ error: "Method not allowed" });
