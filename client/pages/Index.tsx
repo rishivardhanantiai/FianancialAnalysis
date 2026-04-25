@@ -347,7 +347,7 @@ export default function Index() {
         
         <div style={{flex: 1}}></div>
         <div className="nav-section" style={{borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'16px'}}>System</div>
-        <button className="nav-item" onClick={() => setIsChangePwOpen(true)} style={{color:'var(--lightblue)'}}>
+        <button className="nav-item" onClick={() => setIsChangePwOpen(true)}>
           <span className="icon">🔑</span><span>Change Password</span>
         </button>
         <button className="nav-item" onClick={() => { logout(); navigate('/login'); }} style={{color:'var(--red)'}}>
