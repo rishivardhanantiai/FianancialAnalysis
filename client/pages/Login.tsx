@@ -2,6 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
+function getStoredEmail(): string {
+  try {
+    const raw = localStorage.getItem("auth_credentials");
+    if (raw) return JSON.parse(raw).email ?? "";
+  } catch {}
+  return "";
+}
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -9,6 +17,11 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
+
+  // Pre-fill the email from stored credentials (password intentionally left blank for security)
+  useEffect(() => {
+    setEmail(getStoredEmail());
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
