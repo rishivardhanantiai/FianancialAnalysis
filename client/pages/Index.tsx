@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import Chart from "chart.js/auto";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { Lock } from "lucide-react";
 import {
   TransactionCreateRequest,
   TransactionCreateResponse,
@@ -146,7 +147,7 @@ function runCalc(DATA: any[]) {
 // REACT COMPONENT
 // ════════════════════════════════════════════════════════════════════
 export default function Index() {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, changePassword } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const activeTab = location.pathname.substring(1) || 'dashboard';
@@ -161,6 +162,7 @@ export default function Index() {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [syncError, setSyncError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isChangePwOpen, setIsChangePwOpen] = useState(false);
 
   const C = useMemo(() => runCalc(data), [data]);
 
@@ -345,6 +347,9 @@ export default function Index() {
         
         <div style={{flex: 1}}></div>
         <div className="nav-section" style={{borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'16px'}}>System</div>
+        <button className="nav-item" onClick={() => setIsChangePwOpen(true)} style={{color:'var(--lightblue)'}}>
+          <span className="icon">🔑</span><span>Change Password</span>
+        </button>
         <button className="nav-item" onClick={() => { logout(); navigate('/login'); }} style={{color:'var(--red)'}}>
           <span className="icon">🚪</span><span>Sign Out</span>
         </button>
@@ -370,6 +375,13 @@ export default function Index() {
           <div className={activeTab === 'cashflow' ? 'page active' : 'page'} id="page-cashflow">{activeTab === 'cashflow' && renderCashflow()}</div>
         </div>
       </div>
+
+      {isChangePwOpen && (
+        <ChangePwModal
+          onClose={() => setIsChangePwOpen(false)}
+          changePassword={changePassword}
+        />
+      )}
 
       {isModalOpen && (
         <div className="modal-overlay" onMouseDown={(e)=>e.target===e.currentTarget && setIsModalOpen(false)}>
@@ -997,5 +1009,124 @@ function CashFlowTab({ data, C }: any) {
         </div>
       </div>
     </>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CHANGE PASSWORD MODAL
+// ════════════════════════════════════════════════════════════════════
+function ChangePwModal({
+  onClose,
+  changePassword,
+}: {
+  onClose: () => void;
+  changePassword: (current: string, next: string) => Promise<void>;
+}) {
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (newPw.length < 8) {
+      setError('New password must be at least 8 characters.');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setError('New passwords do not match.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await changePassword(currentPw, newPw);
+      setSuccess(true);
+      setTimeout(() => onClose(), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to change password');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="modal-overlay"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="modal" style={{ maxWidth: '420px' }}>
+        <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          🔑 Change Password
+        </div>
+
+        {success ? (
+          <div style={{ textAlign: 'center', padding: '24px 0' }}>
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>✅</div>
+            <div style={{ fontWeight: 700, color: 'var(--green)', fontSize: '14px' }}>
+              Password changed successfully!
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '6px' }}>
+              Closing…
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="modal-form" style={{ gridTemplateColumns: '1fr' }}>
+            <div className="form-group">
+              <label>Current Password</label>
+              <input
+                type="password"
+                value={currentPw}
+                onChange={(e) => setCurrentPw(e.target.value)}
+                placeholder="Enter current password"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>New Password</label>
+              <input
+                type="password"
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
+                placeholder="Min. 8 characters"
+                autoComplete="new-password"
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Confirm New Password</label>
+              <input
+                type="password"
+                value={confirmPw}
+                onChange={(e) => setConfirmPw(e.target.value)}
+                placeholder="Repeat new password"
+                autoComplete="new-password"
+                required
+              />
+            </div>
+
+            {error && (
+              <div style={{ color: 'var(--red)', fontSize: '11px', background: 'var(--danger-bg)', padding: '8px 12px', borderRadius: '6px' }}>
+                {error}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button type="button" className="btn-ui btn-outline" onClick={onClose} disabled={saving}>
+                Cancel
+              </button>
+              <button type="submit" className="btn-ui btn-primary" disabled={saving}>
+                {saving ? 'Saving…' : 'Change Password'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
   );
 }

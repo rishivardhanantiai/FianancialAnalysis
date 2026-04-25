@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
-  const [email, setEmail] = useState("admin@antiaifinance.com");
-  const [password, setPassword] = useState("demo123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -58,8 +58,11 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
                 className="w-full px-4 py-2 border border-blue-pale rounded-lg focus:outline-none focus:ring-2 focus:ring-navy bg-background"
                 disabled={isLoading}
+                autoComplete="email"
+                required
               />
             </div>
 
@@ -71,8 +74,11 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
                 className="w-full px-4 py-2 border border-blue-pale rounded-lg focus:outline-none focus:ring-2 focus:ring-navy bg-background"
                 disabled={isLoading}
+                autoComplete="current-password"
+                required
               />
             </div>
 
@@ -90,15 +96,6 @@ export default function Login() {
               {isLoading ? "Logging in..." : "Login"}
             </button>
           </form>
-
-          {/* Demo credentials hint */}
-          <div className="mt-6 p-4 bg-blue-pale/50 rounded-lg border border-blue-pale">
-            <div className="text-xs font-semibold text-navy mb-2">Demo Credentials:</div>
-            <div className="text-xs text-blue-mid font-mono">
-              <div>Email: admin@antiaifinance.com</div>
-              <div>Password: demo123</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
