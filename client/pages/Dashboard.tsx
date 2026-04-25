@@ -1,10 +1,8 @@
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import Layout from "@/components/Layout";
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   PieChart,
   Pie,
   Cell,
@@ -15,112 +13,8 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-
-const DEMO_DATA = [
-  {
-    date: "2026-01-03",
-    type: "Revenue",
-    amount: 120000,
-    dept: "Sales",
-    project: "Enterprise",
-    customer: "Reliance Ltd",
-  },
-  {
-    date: "2026-01-05",
-    type: "Expense",
-    amount: 18000,
-    dept: "Ops",
-    project: "General",
-    customer: "",
-  },
-  {
-    date: "2026-02-02",
-    type: "Revenue",
-    amount: 135000,
-    dept: "Sales",
-    project: "Enterprise",
-    customer: "Adani Digital",
-  },
-  {
-    date: "2026-02-03",
-    type: "Expense",
-    amount: 18000,
-    dept: "Ops",
-    project: "General",
-    customer: "",
-  },
-  {
-    date: "2026-03-01",
-    type: "Revenue",
-    amount: 160000,
-    dept: "Sales",
-    project: "Enterprise",
-    customer: "HDFC Digital",
-  },
-  {
-    date: "2026-03-03",
-    type: "Expense",
-    amount: 18000,
-    dept: "Ops",
-    project: "General",
-    customer: "",
-  },
-];
-
-interface Calculation {
-  totalRev: number;
-  totalExp: number;
-  profit: number;
-  margin: number;
-  varCost: number;
-  fixedCost: number;
-  cac: number;
-  ltv: number;
-  monthlyBurn: number;
-  runway: number;
-  monthly: Record<string, { rev: number; exp: number }>;
-  months: string[];
-}
-
-function calculateMetrics(data: typeof DEMO_DATA): Calculation {
-  const revenue = data.filter((d) => d.type === "Revenue");
-  const expenses = data.filter((d) => d.type === "Expense");
-
-  const totalRev = revenue.reduce((sum, d) => sum + d.amount, 0);
-  const totalExp = expenses.reduce((sum, d) => sum + d.amount, 0);
-  const profit = totalRev - totalExp;
-  const margin = totalRev > 0 ? profit / totalRev : 0;
-
-  const varCost = 25000;
-  const fixedCost = totalExp - varCost;
-  const cac = totalRev > 0 ? totalExp / revenue.length : 0;
-  const ltv = totalRev / Math.max(1, revenue.length);
-  const monthlyBurn = totalExp / 3;
-  const runway = monthlyBurn > 0 ? 500000 / monthlyBurn : 999;
-
-  const monthly: Record<string, { rev: number; exp: number }> = {
-    "2026-01": { rev: 120000, exp: 18000 },
-    "2026-02": { rev: 135000, exp: 18000 },
-    "2026-03": { rev: 160000, exp: 18000 },
-  };
-
-  const months = Object.keys(monthly).sort();
-
-  return {
-    totalRev,
-    totalExp,
-    profit,
-    margin,
-    varCost,
-    fixedCost,
-    cac,
-    ltv,
-    monthlyBurn,
-    runway,
-    monthly,
-    months,
-  };
-}
+import { useTransactions } from "@/hooks/useTransactions";
+import type { TransactionRecord } from "@shared/api";
 
 function formatCurrency(amount: number): string {
   if (amount >= 100000) {
@@ -133,6 +27,76 @@ function formatCurrency(amount: number): string {
 
 function formatPercent(value: number): string {
   return (value * 100).toFixed(1) + "%";
+}
+
+function computeMetrics(transactions: TransactionRecord[]) {
+  const revenue = transactions.filter((t) => t.type === "Revenue");
+  const expenses = transactions.filter((t) => t.type === "Expense");
+
+  const totalRev = revenue.reduce((s, t) => s + t.amount, 0);
+  const totalExp = expenses.reduce((s, t) => s + t.amount, 0);
+  const profit = totalRev - totalExp;
+  const margin = totalRev > 0 ? profit / totalRev : 0;
+
+  // Unique customers from revenue rows
+  const uniqueCustomers = new Set(
+    revenue.filter((t) => t.customer).map((t) => t.customer)
+  );
+
+  // CAC: total expenses / number of new customers
+  const newCustomers = revenue.filter((t) => t.ctype === "New").length;
+  const cac = newCustomers > 0 ? totalExp / newCustomers : 0;
+  const ltv = uniqueCustomers.size > 0 ? totalRev / uniqueCustomers.size : 0;
+
+  // Monthly breakdown: group by YYYY-MM
+  const monthly: Record<string, { rev: number; exp: number }> = {};
+  for (const t of transactions) {
+    const month = t.date.slice(0, 7); // "YYYY-MM"
+    if (!monthly[month]) monthly[month] = { rev: 0, exp: 0 };
+    if (t.type === "Revenue") monthly[month].rev += t.amount;
+    else monthly[month].exp += t.amount;
+  }
+
+  const months = Object.keys(monthly).sort();
+
+  // Monthly burn = average monthly expense
+  const monthCount = months.length || 1;
+  const monthlyBurn = totalExp / monthCount;
+  // Runway: assume ₹5L cash reserve as baseline
+  const runway = monthlyBurn > 0 ? 500000 / monthlyBurn : 999;
+
+  // Fixed vs Variable cost split from costt field
+  const fixedCost = expenses
+    .filter((t) => t.costt === "Fixed")
+    .reduce((s, t) => s + t.amount, 0);
+  const varCost = expenses
+    .filter((t) => t.costt === "Variable")
+    .reduce((s, t) => s + t.amount, 0);
+  // Untagged expenses go into fixed by default
+  const untaggedExp = totalExp - fixedCost - varCost;
+
+  // Dept spend for pie chart
+  const deptSpend: Record<string, number> = {};
+  for (const t of expenses) {
+    const d = t.dept || "Other";
+    deptSpend[d] = (deptSpend[d] ?? 0) + t.amount;
+  }
+
+  return {
+    totalRev,
+    totalExp,
+    profit,
+    margin,
+    cac,
+    ltv,
+    monthlyBurn,
+    runway,
+    fixedCost: fixedCost + untaggedExp,
+    varCost,
+    monthly,
+    months,
+    deptSpend,
+  };
 }
 
 function KPICard({
@@ -171,34 +135,49 @@ function KPICard({
   );
 }
 
-export default function Dashboard() {
-  const [data] = useState(DEMO_DATA);
-  const [metrics, setMetrics] = useState<Calculation>(calculateMetrics(data));
+const DEPT_COLORS = [
+  "#1F3A5F",
+  "#C62828",
+  "#E65100",
+  "#2E7D32",
+  "#6A1B9A",
+  "#0277BD",
+  "#4E342E",
+];
 
-  useEffect(() => {
-    setMetrics(calculateMetrics(data));
-  }, [data]);
+export default function Dashboard() {
+  const { transactions, loading, error } = useTransactions();
+
+  const metrics = useMemo(() => computeMetrics(transactions), [transactions]);
 
   const chartData = metrics.months.map((month) => ({
-    month: month.slice(5),
+    month: month.slice(5), // "MM"
     revenue: metrics.monthly[month].rev,
     expenses: metrics.monthly[month].exp,
   }));
 
-  const deptChartData = [
-    { name: "Sales", value: 45000 },
-    { name: "Ops", value: 18000 },
-    { name: "HR", value: 25000 },
-    { name: "Tech", value: 12000 },
-  ];
-
-  const COLORS = ["#1F3A5F", "#C62828", "#E65100", "#2E7D32"];
+  const deptChartData = Object.entries(metrics.deptSpend).map(([name, value]) => ({
+    name,
+    value,
+  }));
 
   return (
     <Layout
       title="Financial Command Center"
       subtitle="All KPIs auto-calculated from Daily Log · ANTI AI Private Limited"
     >
+      {/* Loading / Error */}
+      {loading && (
+        <div className="text-center py-8 text-blue-mid text-sm">
+          Loading financial data…
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">
+          {error}
+        </div>
+      )}
+
       {/* KPI Row 1 */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <KPICard
@@ -242,13 +221,13 @@ export default function Dashboard() {
         <KPICard
           label="CAC"
           value={formatCurrency(metrics.cac)}
-          sub="Marketing+Sales / New Custs"
+          sub="Total Expenses / New Customers"
           icon="🎯"
         />
         <KPICard
           label="LTV"
           value={formatCurrency(metrics.ltv)}
-          sub="Total Rev / Total Customers"
+          sub="Total Rev / Unique Customers"
           icon="♾️"
         />
         <KPICard
@@ -283,48 +262,60 @@ export default function Dashboard() {
           <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">
             Revenue vs Expenses (Monthly)
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
-              <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 12 }} />
-              <YAxis stroke="#5a718a" style={{ fontSize: 12 }} />
-              <Tooltip
-                formatter={(value) => formatCurrency(value as number)}
-                contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}
-              />
-              <Legend />
-              <Bar dataKey="revenue" fill="#2E7D32" radius={4} />
-              <Bar dataKey="expenses" fill="#C62828" radius={4} />
-            </BarChart>
-          </ResponsiveContainer>
+          {chartData.length === 0 ? (
+            <div className="flex items-center justify-center h-[300px] text-blue-mid text-xs">
+              No data yet — add transactions in Daily Log
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
+                <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 12 }} />
+                <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
+                <Tooltip
+                  formatter={(value) => formatCurrency(value as number)}
+                  contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}
+                />
+                <Legend />
+                <Bar dataKey="revenue" fill="#2E7D32" radius={4} />
+                <Bar dataKey="expenses" fill="#C62828" radius={4} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
-        {/* Department Spend */}
+        {/* Department Spend Pie */}
         <div className="bg-white border border-blue-pale rounded-lg p-4">
           <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">
-            Department Spend Distribution
+            Department Expense Distribution
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={deptChartData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, value }) =>
-                  `${name}: ${formatCurrency(value)}`
-                }
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {deptChartData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatCurrency(value as number)} />
-            </PieChart>
-          </ResponsiveContainer>
+          {deptChartData.length === 0 ? (
+            <div className="flex items-center justify-center h-[300px] text-blue-mid text-xs">
+              No expense data yet
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={deptChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name}: ${formatCurrency(value)}`}
+                  outerRadius={80}
+                  dataKey="value"
+                >
+                  {deptChartData.map((_, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={DEPT_COLORS[index % DEPT_COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => formatCurrency(value as number)} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
@@ -336,9 +327,7 @@ export default function Dashboard() {
         <div className="space-y-3">
           <div>
             <div className="flex justify-between mb-1">
-              <span className="text-xs font-semibold text-blue-mid">
-                Fixed Costs
-              </span>
+              <span className="text-xs font-semibold text-blue-mid">Fixed Costs</span>
               <span className="text-sm font-bold text-navy">
                 {formatCurrency(metrics.fixedCost)}
               </span>
@@ -350,16 +339,14 @@ export default function Dashboard() {
                   width:
                     metrics.totalExp > 0
                       ? (metrics.fixedCost / metrics.totalExp) * 100 + "%"
-                      : 0,
+                      : "0%",
                 }}
               />
             </div>
           </div>
           <div>
             <div className="flex justify-between mb-1">
-              <span className="text-xs font-semibold text-blue-mid">
-                Variable Costs
-              </span>
+              <span className="text-xs font-semibold text-blue-mid">Variable Costs</span>
               <span className="text-sm font-bold text-navy">
                 {formatCurrency(metrics.varCost)}
               </span>
@@ -371,7 +358,7 @@ export default function Dashboard() {
                   width:
                     metrics.totalExp > 0
                       ? (metrics.varCost / metrics.totalExp) * 100 + "%"
-                      : 0,
+                      : "0%",
                 }}
               />
             </div>

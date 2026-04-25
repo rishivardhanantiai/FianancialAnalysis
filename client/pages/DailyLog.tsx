@@ -1,77 +1,8 @@
 import { useState } from "react";
 import Layout from "@/components/Layout";
-import { Trash2 } from "lucide-react";
-
-interface Transaction {
-  date: string;
-  type: "Revenue" | "Expense";
-  amount: number;
-  dept: string;
-  project: string;
-  customer: string;
-  ctype?: string;
-  costt?: string;
-  owner: string;
-  notes: string;
-}
-
-const INITIAL_DATA: Transaction[] = [
-  {
-    date: "2026-03-01",
-    type: "Revenue",
-    amount: 160000,
-    dept: "Sales",
-    project: "Enterprise",
-    customer: "HDFC Digital",
-    ctype: "New",
-    owner: "Ankit",
-    notes: "Q1 close - large deal",
-  },
-  {
-    date: "2026-03-03",
-    type: "Expense",
-    amount: 18000,
-    dept: "Ops",
-    project: "General",
-    customer: "",
-    costt: "Fixed",
-    owner: "Admin",
-    notes: "Office rent Mar",
-  },
-  {
-    date: "2026-02-02",
-    type: "Revenue",
-    amount: 135000,
-    dept: "Sales",
-    project: "Enterprise",
-    customer: "Adani Digital",
-    ctype: "New",
-    owner: "Ankit",
-    notes: "Enterprise Q1 deal",
-  },
-  {
-    date: "2026-02-03",
-    type: "Expense",
-    amount: 18000,
-    dept: "Ops",
-    project: "General",
-    customer: "",
-    costt: "Fixed",
-    owner: "Admin",
-    notes: "Office rent Feb",
-  },
-  {
-    date: "2026-01-03",
-    type: "Revenue",
-    amount: 120000,
-    dept: "Sales",
-    project: "Enterprise",
-    customer: "Reliance Ltd",
-    ctype: "New",
-    owner: "Ankit",
-    notes: "Enterprise annual deal",
-  },
-];
+import { Trash2, RefreshCw } from "lucide-react";
+import { useTransactions } from "@/hooks/useTransactions";
+import type { TransactionRecord } from "@shared/api";
 
 function formatCurrency(amount: number): string {
   if (amount >= 100000) {
@@ -105,22 +36,28 @@ function Tag({
   );
 }
 
+const EMPTY_FORM = {
+  date: new Date().toISOString().split("T")[0],
+  type: "Revenue" as "Revenue" | "Expense",
+  amount: "",
+  dept: "",
+  project: "",
+  customer: "",
+  ctype: "",
+  costt: "",
+  owner: "",
+  notes: "",
+};
+
 export default function DailyLog() {
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_DATA);
+  const { transactions, loading, error, addTransaction, deleteTransaction, refetch } =
+    useTransactions();
+
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"" | "Revenue" | "Expense">("");
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
-    type: "Revenue" as "Revenue" | "Expense",
-    amount: "",
-    dept: "",
-    project: "",
-    customer: "",
-    ctype: "",
-    costt: "",
-    owner: "",
-    notes: "",
-  });
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const filteredTransactions = transactions
     .filter((t) => {
@@ -135,48 +72,45 @@ export default function DailyLog() {
         t.notes.toLowerCase().includes(searchLower)
       );
     })
-    .filter((t) => (filterType ? t.type === filterType : true))
-    .sort((a, b) => b.date.localeCompare(a.date));
+    .filter((t) => (filterType ? t.type === filterType : true));
 
-  const handleAddTransaction = (e: React.FormEvent) => {
+  const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
 
     if (!formData.date || !formData.amount) {
-      alert("Date and Amount are required");
+      setSubmitError("Date and Amount are required");
       return;
     }
 
-    const newTransaction: Transaction = {
-      date: formData.date,
-      type: formData.type,
-      amount: parseFloat(formData.amount),
-      dept: formData.dept,
-      project: formData.project,
-      customer: formData.customer,
-      ctype: formData.ctype,
-      costt: formData.costt,
-      owner: formData.owner,
-      notes: formData.notes,
-    };
-
-    setTransactions([newTransaction, ...transactions]);
-    setFormData({
-      date: new Date().toISOString().split("T")[0],
-      type: "Revenue",
-      amount: "",
-      dept: "",
-      project: "",
-      customer: "",
-      ctype: "",
-      costt: "",
-      owner: "",
-      notes: "",
-    });
+    setSubmitting(true);
+    try {
+      await addTransaction({
+        date: formData.date,
+        type: formData.type,
+        amount: parseFloat(formData.amount),
+        dept: formData.dept,
+        project: formData.project,
+        customer: formData.customer,
+        ctype: formData.ctype,
+        costt: formData.costt,
+        owner: formData.owner,
+        notes: formData.notes,
+      });
+      setFormData({ ...EMPTY_FORM, date: new Date().toISOString().split("T")[0] });
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to add transaction");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDelete = (index: number) => {
-    if (confirm("Remove this transaction?")) {
-      setTransactions(transactions.filter((_, i) => i !== index));
+  const handleDelete = async (txn: TransactionRecord) => {
+    if (!confirm("Remove this transaction?")) return;
+    try {
+      await deleteTransaction(txn.id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete transaction");
     }
   };
 
@@ -190,6 +124,11 @@ export default function DailyLog() {
         <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">
           Quick Add Transaction
         </h3>
+        {submitError && (
+          <div className="mb-3 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">
+            {submitError}
+          </div>
+        )}
         <form onSubmit={handleAddTransaction} className="space-y-4">
           <div className="grid grid-cols-5 gap-3">
             <div>
@@ -355,9 +294,10 @@ export default function DailyLog() {
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="px-4 py-2 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-light transition"
+              disabled={submitting}
+              className="px-4 py-2 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-light transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              + Add Transaction
+              {submitting ? "Saving…" : "+ Add Transaction"}
             </button>
           </div>
         </form>
@@ -374,7 +314,14 @@ export default function DailyLog() {
               </span>
             </h3>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 items-center">
+            <button
+              onClick={() => refetch()}
+              title="Refresh"
+              className="text-blue-mid hover:text-navy transition p-1 rounded"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
             <input
               type="text"
               placeholder="🔍 Search..."
@@ -394,50 +341,41 @@ export default function DailyLog() {
           </div>
         </div>
 
+        {/* Error banner */}
+        {error && (
+          <div className="mb-4 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">
+            {error}
+          </div>
+        )}
+
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-blue-pale border-b border-blue-pale">
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Date
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Type
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Amount
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Department
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Project
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Customer
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Cust. Type
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Cost Type
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Owner
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Notes
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Action
-                </th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Date</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Type</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Amount</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Department</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Project</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Customer</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Cust. Type</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Cost Type</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Owner</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Notes</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Action</th>
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.length > 0 ? (
-                filteredTransactions.map((txn, idx) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={11} className="px-4 py-8 text-center text-blue-mid">
+                    Loading transactions…
+                  </td>
+                </tr>
+              ) : filteredTransactions.length > 0 ? (
+                filteredTransactions.map((txn) => (
                   <tr
-                    key={idx}
+                    key={txn.id}
                     className="border-b border-blue-pale hover:bg-blue-pale/20 transition"
                   >
                     <td className="px-4 py-2">{txn.date}</td>
@@ -448,9 +386,7 @@ export default function DailyLog() {
                     </td>
                     <td
                       className={`px-4 py-2 font-bold ${
-                        txn.type === "Revenue"
-                          ? "text-success"
-                          : "text-danger"
+                        txn.type === "Revenue" ? "text-success" : "text-danger"
                       }`}
                     >
                       {formatCurrency(txn.amount)}
@@ -459,29 +395,16 @@ export default function DailyLog() {
                     <td className="px-4 py-2">{txn.project || "-"}</td>
                     <td className="px-4 py-2">{txn.customer || "-"}</td>
                     <td className="px-4 py-2">
-                      {txn.ctype ? (
-                        <Tag variant="blue">{txn.ctype}</Tag>
-                      ) : (
-                        "-"
-                      )}
+                      {txn.ctype ? <Tag variant="blue">{txn.ctype}</Tag> : "-"}
                     </td>
                     <td className="px-4 py-2">
-                      {txn.costt ? (
-                        <Tag variant="grey">{txn.costt}</Tag>
-                      ) : (
-                        "-"
-                      )}
+                      {txn.costt ? <Tag variant="grey">{txn.costt}</Tag> : "-"}
                     </td>
                     <td className="px-4 py-2">{txn.owner || "-"}</td>
-                    <td className="px-4 py-2 truncate max-w-xs">
-                      {txn.notes || "-"}
-                    </td>
+                    <td className="px-4 py-2 truncate max-w-xs">{txn.notes || "-"}</td>
                     <td className="px-4 py-2">
                       <button
-                        onClick={() => {
-                          const idx = transactions.indexOf(txn);
-                          handleDelete(idx);
-                        }}
+                        onClick={() => handleDelete(txn)}
                         className="text-danger hover:bg-danger-bg p-1 rounded transition"
                         title="Delete"
                       >
@@ -492,10 +415,7 @@ export default function DailyLog() {
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={11}
-                    className="px-4 py-8 text-center text-blue-mid"
-                  >
+                  <td colSpan={11} className="px-4 py-8 text-center text-blue-mid">
                     No transactions found
                   </td>
                 </tr>

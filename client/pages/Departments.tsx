@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import Layout from "@/components/Layout";
 import {
   BarChart,
@@ -9,8 +10,10 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { useTransactions } from "@/hooks/useTransactions";
+import type { TransactionRecord } from "@shared/api";
 
-const DEPT_ALLOC = {
+const DEPT_ALLOC: Record<string, number> = {
   Marketing: 0.25,
   Sales: 0.12,
   Finance: 0.06,
@@ -20,18 +23,7 @@ const DEPT_ALLOC = {
   Management: 0.1,
 };
 
-const deptSpend = {
-  Marketing: 38500,
-  Sales: 0,
-  Finance: 12000,
-  HR: 295000,
-  Tech: 22200,
-  Ops: 54000,
-  Management: 75000,
-};
-
-const totalRev = 633000;
-const totalBudget = totalRev;
+const ALL_DEPTS = Object.keys(DEPT_ALLOC);
 
 function formatCurrency(amount: number): string {
   if (amount >= 100000) {
@@ -46,10 +38,29 @@ function formatPercent(value: number): string {
   return (value * 100).toFixed(1) + "%";
 }
 
-export default function Departments() {
-  const depts = Object.entries(DEPT_ALLOC).map(([name, alloc]) => {
+function computeDeptData(transactions: TransactionRecord[]) {
+  const totalRev = transactions
+    .filter((t) => t.type === "Revenue")
+    .reduce((s, t) => s + t.amount, 0);
+
+  // Actual spend per dept from expense transactions
+  const deptSpend: Record<string, number> = {};
+  for (const t of transactions.filter((t) => t.type === "Expense")) {
+    const d = t.dept || "Other";
+    deptSpend[d] = (deptSpend[d] ?? 0) + t.amount;
+  }
+
+  // Use total revenue as the budget base; fall back to sum of all expenses if no revenue
+  const totalExp = transactions
+    .filter((t) => t.type === "Expense")
+    .reduce((s, t) => s + t.amount, 0);
+  const totalBudget = totalRev || totalExp || 1;
+
+  // Build rows for known departments
+  const depts = ALL_DEPTS.map((name) => {
+    const alloc = DEPT_ALLOC[name];
     const budget = totalBudget * alloc;
-    const actual = deptSpend[name as keyof typeof deptSpend] || 0;
+    const actual = deptSpend[name] ?? 0;
     const variance = budget - actual;
     const utilization = budget > 0 ? actual / budget : 0;
 
@@ -63,24 +74,24 @@ export default function Departments() {
       statusVariant = "warning";
     }
 
-    return {
-      name,
-      alloc,
-      budget,
-      actual,
-      variance,
-      utilization,
-      status,
-      statusVariant,
-    };
+    return { name, alloc, budget, actual, variance, utilization, status, statusVariant };
   });
 
+  const totalSpend = Object.values(deptSpend).reduce((s, v) => s + v, 0);
   const overcount = depts.filter((d) => d.utilization > 1).length;
-  const nearcount = depts.filter(
-    (d) => d.utilization >= 0.8 && d.utilization <= 1
-  ).length;
+  const nearcount = depts.filter((d) => d.utilization >= 0.8 && d.utilization <= 1).length;
   const okcount = depts.filter((d) => d.utilization < 0.8).length;
-  const totalSpend = Object.values(deptSpend).reduce((sum, v) => sum + v, 0);
+
+  return { depts, totalSpend, overcount, nearcount, okcount };
+}
+
+export default function Departments() {
+  const { transactions, loading, error } = useTransactions();
+
+  const { depts, totalSpend, overcount, nearcount, okcount } = useMemo(
+    () => computeDeptData(transactions),
+    [transactions]
+  );
 
   const chartData = depts.map((d) => ({
     name: d.name,
@@ -92,6 +103,17 @@ export default function Departments() {
       title="Department Tracker"
       subtitle="Budget vs Actual · Efficiency flags · Auto from Daily Log"
     >
+      {loading && (
+        <div className="text-center py-8 text-blue-mid text-sm">
+          Loading department data…
+        </div>
+      )}
+      {error && (
+        <div className="mb-4 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">
+          {error}
+        </div>
+      )}
+
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-blue-pale rounded-lg p-4 hover:shadow-md transition">
@@ -135,27 +157,13 @@ export default function Departments() {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-blue-pale border-b border-blue-pale">
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Department
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Alloc %
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Budget
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Actual Spend
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Variance
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Utilized %
-                </th>
-                <th className="px-4 py-2 text-left font-bold text-navy">
-                  Status
-                </th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Department</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Alloc %</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Budget</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Actual Spend</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Variance</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Utilized %</th>
+                <th className="px-4 py-2 text-left font-bold text-navy">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -167,14 +175,10 @@ export default function Departments() {
                   <td className="px-4 py-2 font-bold">{dept.name}</td>
                   <td className="px-4 py-2">{formatPercent(dept.alloc)}</td>
                   <td className="px-4 py-2">{formatCurrency(dept.budget)}</td>
-                  <td className="px-4 py-2 font-bold">
-                    {formatCurrency(dept.actual)}
-                  </td>
+                  <td className="px-4 py-2 font-bold">{formatCurrency(dept.actual)}</td>
                   <td
                     className="px-4 py-2 font-bold"
-                    style={{
-                      color: dept.variance >= 0 ? "#2E7D32" : "#C62828",
-                    }}
+                    style={{ color: dept.variance >= 0 ? "#2E7D32" : "#C62828" }}
                   >
                     {dept.variance >= 0 ? "+" : ""}
                     {formatCurrency(dept.variance)}
@@ -221,18 +225,25 @@ export default function Departments() {
         <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">
           Spend Distribution
         </h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
-            <XAxis dataKey="name" stroke="#5a718a" style={{ fontSize: 12 }} />
-            <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
-            <Tooltip
-              formatter={(value) => formatCurrency(value as number)}
-              contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}
-            />
-            <Bar dataKey="Actual Spend" fill="#C62828" radius={4} />
-          </BarChart>
-        </ResponsiveContainer>
+        {totalSpend === 0 ? (
+          <div className="flex items-center justify-center h-[300px] text-blue-mid text-xs">
+            No expense transactions yet — add some in Daily Log
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
+              <XAxis dataKey="name" stroke="#5a718a" style={{ fontSize: 12 }} />
+              <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
+              <Tooltip
+                formatter={(value) => formatCurrency(value as number)}
+                contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}
+              />
+              <Legend />
+              <Bar dataKey="Actual Spend" fill="#C62828" radius={4} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </Layout>
   );
