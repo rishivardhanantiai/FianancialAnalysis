@@ -78,9 +78,38 @@ export default function DailyLog() {
     e.preventDefault();
     setSubmitError(null);
 
+    // Always required: date and amount
     if (!formData.date || !formData.amount) {
       setSubmitError("Date and Amount are required");
       return;
+    }
+
+    // For Expense type, make all fields required except notes, customer, and customer type
+    if (formData.type === "Expense") {
+      const missingFields = [];
+      if (!formData.dept) missingFields.push("Department");
+      if (!formData.project) missingFields.push("Project");
+      if (!formData.costt) missingFields.push("Cost Type");
+      if (!formData.owner) missingFields.push("Owner");
+
+      if (missingFields.length > 0) {
+        setSubmitError(`For Expense, the following fields are required: ${missingFields.join(", ")}`);
+        return;
+      }
+    }
+
+    // For Revenue type, make project, customer, customer type, and owner required (dept, costt, notes optional)
+    if (formData.type === "Revenue") {
+      const missingFields = [];
+      if (!formData.project) missingFields.push("Project");
+      if (!formData.customer) missingFields.push("Customer");
+      if (!formData.ctype) missingFields.push("Customer Type");
+      if (!formData.owner) missingFields.push("Owner");
+
+      if (missingFields.length > 0) {
+        setSubmitError(`For Revenue, the following fields are required: ${missingFields.join(", ")}`);
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -129,8 +158,8 @@ export default function DailyLog() {
             {submitError}
           </div>
         )}
-        <form onSubmit={handleAddTransaction} className="space-y-4">
-          <div className="grid grid-cols-5 gap-3">
+        <form onSubmit={handleAddTransaction} className="flex flex-col gap-4">
+          <div className="w-full grid grid-cols-5 gap-3">
             <div>
               <label className="block text-xs font-bold text-blue-mid uppercase mb-1">
                 Date
@@ -214,7 +243,7 @@ export default function DailyLog() {
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-3">
+          <div className="w-full grid grid-cols-5 gap-3">
             <div>
               <label className="block text-xs font-bold text-blue-mid uppercase mb-1">
                 Customer

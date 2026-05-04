@@ -58,6 +58,34 @@ export const listTransactions: RequestHandler = async (_req, res) => {
 export const createTransaction: RequestHandler = async (req, res) => {
   const validation = transactionSchema.safeParse(req.body);
   if (!validation.success) {
+    const type = req.body?.type;
+    const amount = Number(req.body?.amount);
+    const date = typeof req.body?.date === "string" ? req.body.date.trim() : "";
+
+    const missingFields: string[] = [];
+    if (!date) missingFields.push("Date");
+    if (Number.isNaN(amount) || amount < 0) missingFields.push("Amount");
+
+    if (type === "Expense") {
+      if (!req.body?.dept) missingFields.push("Department");
+      if (!req.body?.project) missingFields.push("Project");
+      if (!req.body?.costt) missingFields.push("Cost Type");
+      if (!req.body?.owner) missingFields.push("Owner");
+    }
+
+    if (type === "Revenue") {
+      if (!req.body?.project) missingFields.push("Project");
+      if (!req.body?.customer) missingFields.push("Customer");
+      if (!req.body?.ctype) missingFields.push("Customer Type");
+      if (!req.body?.owner) missingFields.push("Owner");
+    }
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: `Please fill required fields: ${missingFields.join(", ")}`,
+      });
+    }
+
     return res.status(400).json({
       error: "Invalid transaction payload",
       details: validation.error.flatten(),

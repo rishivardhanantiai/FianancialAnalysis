@@ -37,6 +37,42 @@ function validateTransactionPayload(body: any) {
     return { ok: false, error: "Amount must be a positive number" };
   }
 
+  // For Expense type, all fields except notes, customer, and customer type are required
+  if (type === "Expense") {
+    const dept = typeof body?.dept === "string" ? body.dept.trim() : "";
+    const project = typeof body?.project === "string" ? body.project.trim() : "";
+    const costt = typeof body?.costt === "string" ? body.costt.trim() : "";
+    const owner = typeof body?.owner === "string" ? body.owner.trim() : "";
+
+    const missingFields = [];
+    if (!dept) missingFields.push("dept");
+    if (!project) missingFields.push("project");
+    if (!costt) missingFields.push("costt");
+    if (!owner) missingFields.push("owner");
+
+    if (missingFields.length > 0) {
+      return { ok: false, error: `For Expense, the following fields are required: ${missingFields.join(", ")}` };
+    }
+  }
+
+  // For Revenue type, project, customer, customer type, and owner are required
+  if (type === "Revenue") {
+    const project = typeof body?.project === "string" ? body.project.trim() : "";
+    const customer = typeof body?.customer === "string" ? body.customer.trim() : "";
+    const ctype = typeof body?.ctype === "string" ? body.ctype.trim() : "";
+    const owner = typeof body?.owner === "string" ? body.owner.trim() : "";
+
+    const missingFields = [];
+    if (!project) missingFields.push("project");
+    if (!customer) missingFields.push("customer");
+    if (!ctype) missingFields.push("ctype");
+    if (!owner) missingFields.push("owner");
+
+    if (missingFields.length > 0) {
+      return { ok: false, error: `For Revenue, the following fields are required: ${missingFields.join(", ")}` };
+    }
+  }
+
   return {
     ok: true,
     value: {
@@ -90,8 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const validation = validateTransactionPayload(req.body);
       if (!validation.ok) {
         return res.status(400).json({
-          error: "Invalid transaction payload",
-          details: validation.error,
+          error: validation.error,
         });
       }
 

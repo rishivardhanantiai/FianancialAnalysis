@@ -551,18 +551,22 @@ function LogTab({
       
       <div className="box mb-16">
         <div className="box-title">Quick Add Transaction</div>
-        <div className="form-row" style={{gridTemplateColumns:'130px 110px 130px 140px 140px 130px 120px 110px 120px 1fr auto'}}>
+        <div className="form-row">
           <div className="form-group"><label>Date</label><input type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})}/></div>
           <div className="form-group"><label>Type</label><select value={form.type} onChange={e=>setForm({...form, type:e.target.value})}><option>Revenue</option><option>Expense</option></select></div>
           <div className="form-group"><label>Amount (₹)</label><input type="number" placeholder="0" min="0" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})}/></div>
           <div className="form-group"><label>Department</label><select value={form.dept} onChange={e=>setForm({...form, dept:e.target.value})}><option value="">— Select —</option><option>Marketing</option><option>Sales</option><option>Finance</option><option>HR</option><option>Tech</option><option>Ops</option><option>Management</option></select></div>
           <div className="form-group"><label>Project</label><input type="text" placeholder="e.g. Platform" value={form.project} onChange={e=>setForm({...form, project:e.target.value})}/></div>
+        </div>
+        <div className="form-row">
           <div className="form-group"><label>Customer</label><input type="text" placeholder="Customer name" value={form.customer} onChange={e=>setForm({...form, customer:e.target.value})}/></div>
           <div className="form-group"><label>Cust. Type</label><select value={form.ctype} onChange={e=>setForm({...form, ctype:e.target.value})}><option value="">—</option><option>New</option><option>Existing</option></select></div>
           <div className="form-group"><label>Cost Type</label><select value={form.costt} onChange={e=>setForm({...form, costt:e.target.value})}><option value="">—</option><option>Fixed</option><option>Variable</option></select></div>
           <div className="form-group"><label>Owner</label><input type="text" placeholder="Owner" value={form.owner} onChange={e=>setForm({...form, owner:e.target.value})}/></div>
           <div className="form-group"><label>Notes</label><input type="text" placeholder="Notes" value={form.notes} onChange={e=>setForm({...form, notes:e.target.value})}/></div>
-          <div className="form-group"><label>&nbsp;</label><button className="btn-ui btn-primary" onClick={handleAdd} style={{height:'33px',whiteSpace:'nowrap'}}>+ Add</button></div>
+        </div>
+        <div style={{display:'flex',justifyContent:'flex-end'}}>
+          <button className="btn-ui btn-primary" onClick={handleAdd} style={{height:'33px',whiteSpace:'nowrap'}}>+ Add</button>
         </div>
       </div>
 
