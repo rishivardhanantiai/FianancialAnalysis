@@ -25,6 +25,7 @@ export function createServer() {
   app.get(["/api/demo", "/demo"], handleDemo);
   app.get(["/api/transactions", "/transactions"], listTransactions);
   app.post(["/api/transactions", "/transactions"], createTransaction);
+  app.delete(["/api/transactions", "/transactions"], deleteTransaction);
   app.delete(["/api/transactions/:id", "/transactions/:id"], deleteTransaction);
 
   return app;

@@ -133,7 +133,9 @@ export const createTransaction: RequestHandler = async (req, res) => {
 };
 
 export const deleteTransaction: RequestHandler = async (req, res) => {
-  const id = req.params.id;
+  const rawQueryId = req.query?.id;
+  const queryId = Array.isArray(rawQueryId) ? rawQueryId[0] : rawQueryId;
+  const id = req.params.id ?? queryId;
   if (!id) {
     return res.status(400).json({ error: "Transaction id is required" });
   }

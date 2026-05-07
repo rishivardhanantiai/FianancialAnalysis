@@ -242,9 +242,15 @@ export default function Index() {
   };
 
   const removeTransaction = async (id: string) => {
-    const response = await fetch(`/api/transactions/${id}`, {
+    let response = await fetch(`/api/transactions/${id}`, {
       method: 'DELETE',
     });
+
+    if (response.status === 404 || response.status === 405) {
+      response = await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+    }
 
     if (!response.ok) {
       const errorPayload = await response.json().catch(() => ({ error: 'Failed to delete transaction' }));

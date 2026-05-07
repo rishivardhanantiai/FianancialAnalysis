@@ -60,7 +60,15 @@ export function useTransactions(): UseTransactionsReturn {
   );
 
   const deleteTransaction = useCallback(async (id: string): Promise<void> => {
-    const res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+    let res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+
+    // Some hosts may not resolve dynamic serverless routes like /api/transactions/:id.
+    // Retry against index route with query param as a compatibility fallback.
+    if (res.status === 404 || res.status === 405) {
+      res = await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    }
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
