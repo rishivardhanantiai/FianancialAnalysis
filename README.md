@@ -4,7 +4,7 @@ A full-stack financial analytics platform for **ANTI AI Private Limited** — bu
 
 ---
 
-## 🚀 Live Demo
+## Live Demo
 
 **Deployed on Vercel** — [https://financial-analysis-wine.vercel.app](https://financial-analysis-wine.vercel.app)
 
