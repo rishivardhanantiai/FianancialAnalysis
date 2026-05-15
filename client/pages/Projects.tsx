@@ -89,56 +89,54 @@ export default function Projects() {
         <div className="text-center py-8 text-blue-mid text-sm">Loading project data…</div>
       )}
       {error && (
-        <div className="mb-4 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">{error}</div>
+        <div className="alert red" style={{ marginBottom: "12px" }}>{error}</div>
       )}
 
       {/* KPI Summary */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <div className="text-xs font-bold text-blue-mid uppercase tracking-wider mb-2">Total Revenue</div>
-          <div className="text-2xl font-bold text-success">{formatCurrency(totalRevenue)}</div>
-          <div className="text-xs text-blue-mid">{projects.length} project(s)</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" }}>
+        <div className="box" style={{ padding: "16px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Total Revenue</div>
+          <div style={{ fontSize: "24px", fontWeight: 800, color: "var(--green)" }}>{formatCurrency(totalRevenue)}</div>
+          <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>{projects.length} project(s)</div>
         </div>
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <div className="text-xs font-bold text-blue-mid uppercase tracking-wider mb-2">Total Expenses</div>
-          <div className="text-2xl font-bold text-danger">{formatCurrency(totalExpenses)}</div>
+        <div className="box" style={{ padding: "16px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Total Expenses</div>
+          <div style={{ fontSize: "24px", fontWeight: 800, color: "var(--red)" }}>{formatCurrency(totalExpenses)}</div>
         </div>
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <div className="text-xs font-bold text-blue-mid uppercase tracking-wider mb-2">Net Profit</div>
-          <div className={`text-2xl font-bold ${totalProfit >= 0 ? "text-success" : "text-danger"}`}>
+        <div className="box" style={{ padding: "16px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Net Profit</div>
+          <div style={{ fontSize: "24px", fontWeight: 800, color: totalProfit >= 0 ? "var(--green)" : "var(--red)" }}>
             {formatCurrency(totalProfit)}
           </div>
         </div>
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <div className="text-xs font-bold text-blue-mid uppercase tracking-wider mb-2">Overall Margin</div>
-          <div className={`text-2xl font-bold ${overallMargin >= 0 ? "text-navy" : "text-danger"}`}>
+        <div className="box" style={{ padding: "16px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Overall Margin</div>
+          <div style={{ fontSize: "24px", fontWeight: 800, color: overallMargin >= 0 ? "var(--navy)" : "var(--red)" }}>
             {totalRevenue > 0 ? formatPercent(overallMargin) : "—"}
           </div>
         </div>
       </div>
 
       {/* Project P&L Table */}
-      <div className="bg-white border border-blue-pale rounded-lg p-6 mb-6">
-        <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">
-          Project P&L Summary
-          <span className="text-blue-mid font-normal ml-2">— {periodLabel(period)}</span>
-        </h3>
+      <div className="box mb-16">
+        <div className="box-title">
+          <span>Project P&L Summary</span>
+          <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--muted)" }}>— {periodLabel(period)}</span>
+        </div>
         {projects.length === 0 ? (
-          <p className="text-blue-mid text-xs py-8 text-center">
-            No transactions found for the selected period.
-          </p>
+          <div className="empty" style={{ padding: "40px" }}>No transactions found for the selected period.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div style={{ overflowX: "auto" }}>
+            <table className="tbl">
               <thead>
-                <tr className="bg-blue-pale border-b border-blue-pale">
-                  <th className="px-4 py-2 text-left font-bold text-navy">Project</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Revenue</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Expenses</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Gross Profit</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Margin %</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Transactions</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Status</th>
+                <tr>
+                  <th>Project</th>
+                  <th>Revenue</th>
+                  <th>Expenses</th>
+                  <th>Gross Profit</th>
+                  <th>Margin %</th>
+                  <th>Transactions</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -149,37 +147,26 @@ export default function Projects() {
                     proj.profit > 0 ? "✓ Profitable" : proj.revenue === 0 ? "Cost Only" : "⚠ Loss";
 
                   return (
-                    <tr
-                      key={proj.name}
-                      className="border-b border-blue-pale hover:bg-blue-pale/20 transition"
-                    >
-                      <td className="px-4 py-2 font-bold">{proj.name}</td>
-                      <td className="px-4 py-2 text-success font-bold">
+                    <tr key={proj.name}>
+                      <td className="fw-bold">{proj.name}</td>
+                      <td className="fw-bold" style={{ color: "var(--green)" }}>
                         {proj.revenue > 0 ? formatCurrency(proj.revenue) : "—"}
                       </td>
-                      <td className="px-4 py-2 text-danger">
+                      <td className="fw-bold" style={{ color: "var(--red)" }}>
                         {proj.expenses > 0 ? formatCurrency(proj.expenses) : "—"}
                       </td>
                       <td
-                        className="px-4 py-2 font-bold"
-                        style={{ color: proj.profit >= 0 ? "#2E7D32" : "#C62828" }}
+                        className="fw-bold"
+                        style={{ color: proj.profit >= 0 ? "var(--green)" : "var(--red)" }}
                       >
                         {proj.revenue > 0 ? formatCurrency(proj.profit) : "—"}
                       </td>
-                      <td className="px-4 py-2">
+                      <td>
                         {proj.revenue > 0 ? formatPercent(proj.margin) : "—"}
                       </td>
-                      <td className="px-4 py-2">{proj.txns} txns</td>
-                      <td className="px-4 py-2">
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                            statusVariant === "green"
-                              ? "bg-success-bg text-success"
-                              : statusVariant === "grey"
-                              ? "bg-gray-200 text-gray-700"
-                              : "bg-danger-bg text-danger"
-                          }`}
-                        >
+                      <td>{proj.txns} txns</td>
+                      <td>
+                        <span className={`tag ${statusVariant}`}>
                           {statusText}
                         </span>
                       </td>
@@ -193,31 +180,30 @@ export default function Projects() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white border border-blue-pale rounded-lg p-6">
-        <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">
-          Revenue vs Expenses by Project
-        </h3>
-        {chartData.length === 0 ? (
-          <div className="flex items-center justify-center h-[300px] text-blue-mid text-xs">
-            No data for selected period
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
-              <XAxis dataKey="name" stroke="#5a718a" style={{ fontSize: 12 }} />
-              <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
-              <Tooltip
-                formatter={(value) => formatCurrency(value as number)}
-                contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}
-              />
-              <Legend />
-              <Bar dataKey="Revenue" fill="#2E7D32" radius={4} />
-              <Bar dataKey="Expenses" fill="#C62828" radius={4} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+      <div className="box">
+        <div className="box-title">Revenue vs Expenses by Project</div>
+        <div style={{ padding: "16px" }}>
+          {chartData.length === 0 ? (
+            <div className="empty" style={{ height: "300px" }}>No data for selected period</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
+                <XAxis dataKey="name" stroke="#5a718a" style={{ fontSize: 12 }} />
+                <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
+                <Tooltip
+                  formatter={(value) => formatCurrency(value as number)}
+                  contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }}
+                />
+                <Legend />
+                <Bar dataKey="Revenue" fill="#2E7D32" radius={4} />
+                <Bar dataKey="Expenses" fill="#C62828" radius={4} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
     </Layout>
   );
 }
+

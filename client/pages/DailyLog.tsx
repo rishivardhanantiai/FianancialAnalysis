@@ -174,10 +174,8 @@ export default function DailyLog() {
       subtitle="Single source of truth · Phase 1: Business Unit & Invoice Tracking"
     >
       {/* Quick Add Form */}
-      <div className="bg-white border border-blue-pale rounded-lg p-6 mb-6">
-        <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">
-          Quick Add Transaction
-        </h3>
+      <div className="box mb-16">
+        <div className="box-title">Quick Add Transaction</div>
         {submitError && (
           <div className="mb-3 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">
             {submitError}
@@ -188,56 +186,54 @@ export default function DailyLog() {
             Upload Error: {uploadError}
           </div>
         )}
-        <form onSubmit={handleAddTransaction} className="flex flex-col gap-4">
-          <div className="w-full grid grid-cols-6 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Date</label>
+        <form onSubmit={handleAddTransaction}>
+          <div className="form-row-4">
+            <div className="form-group">
+              <label>Date</label>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">BU</label>
+            <div className="form-group">
+              <label>BU</label>
               <select
                 value={formData.business_unit}
                 onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
-                className="w-full px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
               >
                 <option>India</option>
                 <option>UAE</option>
                 <option>UK</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Type</label>
+            <div className="form-group">
+              <label>Type</label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                className="w-full px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
               >
                 <option>Revenue</option>
                 <option>Expense</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Amount (₹)</label>
+            <div className="form-group">
+              <label>Amount (₹)</label>
               <input
                 type="number"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="0"
-                className="w-full px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
               />
             </div>
-            <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Dept</label>
+          </div>
+
+          <div className="form-row-4" style={{ marginTop: "12px" }}>
+            <div className="form-group">
+              <label>Dept</label>
               <select
                 value={formData.dept}
                 onChange={(e) => setFormData({ ...formData, dept: e.target.value })}
-                className="w-full px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
               >
                 <option value="">—</option>
                 <option>Marketing</option>
@@ -249,136 +245,180 @@ export default function DailyLog() {
                 <option>Management</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Project</label>
+            <div className="form-group">
+              <label>Project</label>
               <input
                 type="text"
                 value={formData.project}
                 onChange={(e) => setFormData({ ...formData, project: e.target.value })}
-                placeholder="e.g. Platform"
-                className="w-full px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+                placeholder="Project Name"
               />
             </div>
-          </div>
-
-          <div className="w-full grid grid-cols-6 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Inv #</label>
+            <div className="form-group">
+              <label>Inv #</label>
               <input
                 type="text"
                 value={formData.invoice_number}
                 onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
                 placeholder="INV-001"
-                className="w-full px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
               />
             </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Invoice Attachment</label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+            <div className="form-group">
+              <label>Owner</label>
+              <input
+                type="text"
+                value={formData.owner}
+                onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
+                placeholder="Owner"
+              />
+            </div>
+          </div>
+
+          <div className="form-row-4" style={{ marginTop: "12px" }}>
+            <div className="form-group">
+              {formData.type === "Revenue" ? (
+                <>
+                  <label>Customer Type</label>
+                  <select
+                    value={formData.ctype}
+                    onChange={(e) => setFormData({ ...formData, ctype: e.target.value })}
+                  >
+                    <option value="">— Select —</option>
+                    <option>New</option>
+                    <option>Existing</option>
+                  </select>
+                </>
+              ) : (
+                <>
+                  <label>Cost Type</label>
+                  <select
+                    value={formData.costt}
+                    onChange={(e) => setFormData({ ...formData, costt: e.target.value })}
+                  >
+                    <option value="">— Select —</option>
+                    <option>Fixed</option>
+                    <option>Variable</option>
+                  </select>
+                </>
+              )}
+            </div>
+            <div className="form-group">
+              <label>Customer</label>
+              <input
+                type="text"
+                value={formData.customer}
+                onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
+                placeholder="Customer"
+              />
+            </div>
+            <div className="form-group">
+              <label>Invoice Attachment</label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <div style={{ flex: 1, position: "relative" }}>
                   <input
                     type="file"
                     ref={fileInputRef}
                     onChange={handleFileChange}
-                    className="hidden"
+                    style={{ display: "none" }}
                     accept=".pdf,.jpg,.jpeg,.png"
                   />
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadInProgress}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-dashed border-blue-mid rounded-lg text-xs text-blue-mid hover:bg-blue-pale transition"
+                    className="btn-ui btn-outline"
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px",
+                      borderStyle: "dashed",
+                    }}
                   >
                     {uploadInProgress ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <RefreshCw className="w-3 h-3 animate-spin" />
                     ) : (
-                      <Upload className="w-4 h-4" />
+                      <Upload className="w-3 h-3" />
                     )}
-                    {formData.invoice_url ? "Change Invoice" : "Upload Invoice (PDF/Img)"}
+                    {formData.invoice_url ? "Change" : "Upload"}
                   </button>
                 </div>
                 {formData.invoice_url && (
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, invoice_url: "" })}
-                    className="p-2 text-danger hover:bg-danger-bg rounded-lg transition"
+                    className="btn-ui btn-danger"
+                    style={{ padding: "4px 8px" }}
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3 h-3" />
                   </button>
                 )}
               </div>
-              {formData.invoice_url && (
-                <p className="text-[10px] text-success font-bold mt-1 flex items-center gap-1">
-                  <FileText className="w-3 h-3" /> File attached successfully
-                </p>
-              )}
             </div>
-            <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Customer</label>
-              <input
-                type="text"
-                value={formData.customer}
-                onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
-                placeholder="Customer"
-                className="w-full px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Owner</label>
-              <input
-                type="text"
-                value={formData.owner}
-                onChange={(e) => setFormData({ ...formData, owner: e.target.value })}
-                placeholder="Owner"
-                className="w-full px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
-              />
-            </div>
-            <div className="flex items-end">
+            <div style={{ display: "flex", alignItems: "flex-end" }}>
               <button
                 type="submit"
                 disabled={submitting || uploadInProgress}
-                className="w-full px-4 py-2 bg-navy text-white text-xs font-bold rounded-lg hover:bg-navy-light transition disabled:opacity-50"
+                className="btn-ui btn-primary"
+                style={{ width: "100%" }}
               >
                 {submitting ? "Saving…" : "+ Save"}
               </button>
             </div>
           </div>
         </form>
+
       </div>
 
       {/* Transaction Log */}
-      <div className="bg-white border border-blue-pale rounded-lg p-6">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-          <div>
-            <h3 className="text-xs font-bold text-navy uppercase tracking-wider">
-              Transaction Log
-              <span className="text-blue-mid font-normal ml-2">({filteredTransactions.length})</span>
-            </h3>
+      <div className="box">
+        <div className="box-title">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span>Transaction Log</span>
+            <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--muted)" }}>
+              ({filteredTransactions.length})
+            </span>
           </div>
-          <div className="flex gap-2 items-center flex-wrap">
+          <div style={{ display: "flex", gap: "8px" }}>
             <button
               onClick={handleBulkDownload}
-              className="flex items-center gap-2 px-3 py-2 bg-blue-pale text-navy text-xs font-bold rounded-lg hover:bg-blue-mid hover:text-white transition"
+              className="btn-ui btn-outline"
+              style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px" }}
             >
-              <Download className="w-4 h-4" /> Export All Invoices
+              <Download className="w-3 h-3" /> Export All Invoices
             </button>
             <button
               onClick={() => refetch()}
-              className="text-blue-mid hover:text-navy transition p-2 bg-background border border-blue-pale rounded-lg"
+              className="btn-ui btn-outline"
+              style={{ padding: "4px 8px" }}
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="w-3 h-3" />
             </button>
             <input
               type="text"
               placeholder="🔍 Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy w-32"
+              style={{
+                border: "1.5px solid var(--f-border)",
+                borderRadius: "8px",
+                padding: "5px 10px",
+                fontSize: "12px",
+                width: "120px",
+                background: "var(--background)",
+              }}
             />
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as any)}
-              className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+              style={{
+                border: "1.5px solid var(--f-border)",
+                borderRadius: "8px",
+                padding: "5px 10px",
+                fontSize: "12px",
+                background: "var(--background)",
+              }}
             >
               <option value="">All Types</option>
               <option value="Revenue">Revenue</option>
@@ -387,7 +427,13 @@ export default function DailyLog() {
             <select
               value={filterBU}
               onChange={(e) => setFilterBU(e.target.value)}
-              className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+              style={{
+                border: "1.5px solid var(--f-border)",
+                borderRadius: "8px",
+                padding: "5px 10px",
+                fontSize: "12px",
+                background: "var(--background)",
+              }}
             >
               <option value="">All BUs</option>
               <option>India</option>
@@ -397,70 +443,74 @@ export default function DailyLog() {
           </div>
         </div>
 
-        {error && <div className="mb-4 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">{error}</div>}
+        {error && <div className="alert red" style={{ marginBottom: "12px" }}>{error}</div>}
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-[11px]">
+        <div style={{ overflowX: "auto" }}>
+          <table className="tbl">
             <thead>
-              <tr className="bg-blue-pale border-b border-blue-pale">
-                <th className="px-3 py-2 text-left font-bold text-navy">Date</th>
-                <th className="px-3 py-2 text-left font-bold text-navy">BU</th>
-                <th className="px-3 py-2 text-left font-bold text-navy">Type</th>
-                <th className="px-3 py-2 text-left font-bold text-navy">Inv #</th>
-                <th className="px-3 py-2 text-left font-bold text-navy">Amount</th>
-                <th className="px-3 py-2 text-left font-bold text-navy">Dept / Project</th>
-                <th className="px-3 py-2 text-left font-bold text-navy">Customer / Owner</th>
-                <th className="px-3 py-2 text-left font-bold text-navy">Invoice</th>
-                <th className="px-3 py-2 text-left font-bold text-navy">Action</th>
+              <tr>
+                <th>Date</th>
+                <th>BU</th>
+                <th>Type</th>
+                <th>Inv #</th>
+                <th>Amount</th>
+                <th>Dept / Project</th>
+                <th>Customer / Owner</th>
+                <th>Invoice</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-blue-mid">Loading...</td></tr>
+                <tr><td colSpan={9} className="empty">Loading...</td></tr>
               ) : filteredTransactions.length > 0 ? (
                 filteredTransactions.map((txn) => (
-                  <tr key={txn.id} className="border-b border-blue-pale hover:bg-blue-pale/20 transition">
-                    <td className="px-3 py-2 whitespace-nowrap">{txn.date}</td>
-                    <td className="px-3 py-2 font-bold">{txn.business_unit || "India"}</td>
-                    <td className="px-3 py-2">
-                      <Tag variant={txn.type === "Revenue" ? "green" : "red"}>{txn.type}</Tag>
+                  <tr key={txn.id}>
+                    <td>{txn.date}</td>
+                    <td className="fw-bold">{txn.business_unit || "India"}</td>
+                    <td>
+                      <span className={`tag ${txn.type === "Revenue" ? "green" : "red"}`}>
+                        {txn.type}
+                      </span>
                     </td>
-                    <td className="px-3 py-2 font-mono text-blue-mid">{txn.invoice_number || "—"}</td>
-                    <td className={`px-3 py-2 font-bold ${txn.type === "Revenue" ? "text-success" : "text-danger"}`}>
+                    <td className="mono" style={{ color: "var(--navy)" }}>{txn.invoice_number || "—"}</td>
+                    <td className="fw-bold" style={{ color: txn.type === "Revenue" ? "var(--green)" : "var(--red)" }}>
                       {formatCurrency(txn.amount)}
                     </td>
-                    <td className="px-3 py-2">
-                      <div className="font-bold">{txn.project}</div>
-                      <div className="text-[10px] text-blue-mid">{txn.dept}</div>
+                    <td>
+                      <div className="fw-bold">{txn.project}</div>
+                      <div style={{ fontSize: "10px", color: "var(--muted)" }}>{txn.dept}</div>
                     </td>
-                    <td className="px-3 py-2">
-                      <div className="font-bold">{txn.customer || "—"}</div>
-                      <div className="text-[10px] text-blue-mid">{txn.owner}</div>
+                    <td>
+                      <div className="fw-bold">{txn.customer || "—"}</div>
+                      <div style={{ fontSize: "10px", color: "var(--muted)" }}>{txn.owner}</div>
                     </td>
-                    <td className="px-3 py-2">
+                    <td>
                       {txn.invoice_url ? (
                         <a
                           href={txn.invoice_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-navy font-bold hover:underline"
+                          className="tag blue"
+                          style={{ textDecoration: "none", display: "inline-flex", gap: "4px" }}
                         >
                           <FileText className="w-3 h-3" /> View <ExternalLink className="w-2 h-2" />
                         </a>
                       ) : "—"}
                     </td>
-                    <td className="px-3 py-2">
+                    <td>
                       <button
                         onClick={() => handleDelete(txn)}
-                        className="text-danger hover:bg-danger-bg p-1 rounded transition"
+                        className="btn-ui btn-danger"
+                        style={{ padding: "4px 8px" }}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </td>
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-blue-mid">No records found</td></tr>
+                <tr><td colSpan={9} className="empty">No records found</td></tr>
               )}
             </tbody>
           </table>
@@ -469,3 +519,4 @@ export default function DailyLog() {
     </Layout>
   );
 }
+

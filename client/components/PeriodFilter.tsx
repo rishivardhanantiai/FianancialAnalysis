@@ -78,18 +78,23 @@ export default function PeriodFilter({
   };
 
   return (
-    <div className="bg-white border border-blue-pale rounded-lg p-4 mb-6">
+    <div className="box mb-16">
       {/* Tab Row */}
-      <div className="flex gap-1 mb-4 flex-wrap">
+      <div style={{ display: "flex", gap: "12px", marginBottom: "16px", borderBottom: "1px solid var(--f-border)", paddingBottom: "8px" }}>
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => handleTabChange(tab.key)}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${
-              activeTab === tab.key
-                ? "bg-navy text-white"
-                : "bg-blue-pale text-navy hover:bg-blue-mid hover:text-white"
-            }`}
+            className="btn-ui"
+            style={{
+              background: activeTab === tab.key ? "var(--blue-pale)" : "transparent",
+              color: activeTab === tab.key ? "var(--navy)" : "var(--f-muted)",
+              fontWeight: activeTab === tab.key ? 800 : 500,
+              padding: "6px 12px",
+              fontSize: "11px",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+            }}
           >
             {tab.label}
           </button>
@@ -97,18 +102,19 @@ export default function PeriodFilter({
       </div>
 
       {/* Controls per tab */}
-      <div className="flex gap-3 items-end flex-wrap">
+      <div style={{ display: "flex", gap: "16px", alignItems: "end", flexWrap: "wrap" }}>
         {/* MONTHLY */}
         {activeTab === "monthly" && value.type === "monthly" && (
           <>
             <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Year</label>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "var(--f-muted)", textTransform: "uppercase", marginBottom: "4px" }}>Year</label>
               <select
                 value={value.year}
                 onChange={(e) =>
                   onChange({ type: "monthly", year: +e.target.value, month: value.month })
                 }
-                className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+                className="tbl-input"
+                style={{ width: "100px" }}
               >
                 {availableYears.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -116,13 +122,14 @@ export default function PeriodFilter({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Month</label>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "var(--f-muted)", textTransform: "uppercase", marginBottom: "4px" }}>Month</label>
               <select
                 value={value.month}
                 onChange={(e) =>
                   onChange({ type: "monthly", year: value.year, month: +e.target.value })
                 }
-                className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+                className="tbl-input"
+                style={{ width: "120px" }}
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                   <option key={m} value={m}>{MONTH_NAMES[m]}</option>
@@ -136,13 +143,14 @@ export default function PeriodFilter({
         {activeTab === "quarterly" && value.type === "quarterly" && (
           <>
             <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Year</label>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "var(--f-muted)", textTransform: "uppercase", marginBottom: "4px" }}>Year</label>
               <select
                 value={value.year}
                 onChange={(e) =>
                   onChange({ type: "quarterly", year: +e.target.value, quarter: value.quarter })
                 }
-                className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+                className="tbl-input"
+                style={{ width: "100px" }}
               >
                 {availableYears.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -150,13 +158,14 @@ export default function PeriodFilter({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Quarter</label>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "var(--f-muted)", textTransform: "uppercase", marginBottom: "4px" }}>Quarter</label>
               <select
                 value={value.quarter}
                 onChange={(e) =>
                   onChange({ type: "quarterly", year: value.year, quarter: +e.target.value as 1|2|3|4 })
                 }
-                className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+                className="tbl-input"
+                style={{ width: "160px" }}
               >
                 <option value={1}>Q1 (Jan–Mar)</option>
                 <option value={2}>Q2 (Apr–Jun)</option>
@@ -170,11 +179,12 @@ export default function PeriodFilter({
         {/* YEARLY */}
         {activeTab === "yearly" && value.type === "yearly" && (
           <div>
-            <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Year</label>
+            <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "var(--f-muted)", textTransform: "uppercase", marginBottom: "4px" }}>Year</label>
             <select
               value={value.year}
               onChange={(e) => onChange({ type: "yearly", year: +e.target.value })}
-              className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+              className="tbl-input"
+              style={{ width: "100px" }}
             >
               {availableYears.map((y) => (
                 <option key={y} value={y}>{y}</option>
@@ -186,10 +196,10 @@ export default function PeriodFilter({
         {/* FINANCIAL YEAR */}
         {activeTab === "financial-year" && (
           <div>
-            <label className="block text-xs font-bold text-blue-mid uppercase mb-1">
+            <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "var(--f-muted)", textTransform: "uppercase", marginBottom: "4px" }}>
               Financial Year (Apr – Mar)
             </label>
-            <div className="flex gap-2 flex-wrap">
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
               {availableFYs.map((fy) => {
                 const isSelected =
                   (value.type === "financial-year" && value.fy === fy) ||
@@ -208,17 +218,20 @@ export default function PeriodFilter({
                         else onChange({ type: "multi-fy", fys });
                       } else if (value.type === "financial-year") {
                         if (value.fy === fy) return;
-                        // second click starts multi-select
                         onChange({ type: "multi-fy", fys: [value.fy, fy] });
                       } else {
                         onChange({ type: "financial-year", fy });
                       }
                     }}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition ${
-                      isSelected
-                        ? "bg-navy text-white border-navy"
-                        : "bg-white text-navy border-blue-pale hover:border-navy"
-                    }`}
+                    className="tag"
+                    style={{
+                      background: isSelected ? "var(--navy)" : "var(--blue-pale)",
+                      color: isSelected ? "#fff" : "var(--navy)",
+                      cursor: "pointer",
+                      padding: "6px 12px",
+                      border: "none",
+                      fontWeight: isSelected ? 800 : 600,
+                    }}
                   >
                     FY {fy}
                   </button>
@@ -226,7 +239,7 @@ export default function PeriodFilter({
               })}
             </div>
             {value.type === "multi-fy" && (
-              <p className="text-xs text-blue-mid mt-1">
+              <p style={{ fontSize: "11px", color: "var(--f-muted)", marginTop: "8px" }}>
                 Comparing {value.fys.length} financial years. Click a selected FY to deselect.
               </p>
             )}
@@ -237,21 +250,21 @@ export default function PeriodFilter({
         {activeTab === "custom" && value.type === "custom" && (
           <>
             <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">Start Date</label>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "var(--f-muted)", textTransform: "uppercase", marginBottom: "4px" }}>Start Date</label>
               <input
                 type="date"
                 value={value.start}
                 onChange={(e) => onChange({ type: "custom", start: e.target.value, end: value.end })}
-                className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+                className="tbl-input"
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-blue-mid uppercase mb-1">End Date</label>
+              <label style={{ display: "block", fontSize: "10px", fontWeight: 700, color: "var(--f-muted)", textTransform: "uppercase", marginBottom: "4px" }}>End Date</label>
               <input
                 type="date"
                 value={value.end}
                 onChange={(e) => onChange({ type: "custom", start: value.start, end: e.target.value })}
-                className="px-3 py-2 border border-blue-pale rounded-lg text-xs bg-background focus:outline-none focus:ring-2 focus:ring-navy"
+                className="tbl-input"
               />
             </div>
           </>

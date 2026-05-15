@@ -9,6 +9,7 @@ import {
   TransactionRecord,
   TransactionsListResponse,
 } from "@shared/api";
+import Layout from "@/components/Layout";
 
 // ════════════════════════════════════════════════════════════════════
 // DATA STORE & CONSTANTS
@@ -325,75 +326,22 @@ export default function Index() {
   };
 
   return (
-    <div className="shell">
-      <nav className="sidebar">
-        <div className="brand">
-          <img src="/logo.jpg" alt="ANTI AI Logo" className="brand-logo" />
-          <div className="brand-name">ANTI AI</div>
-          <div className="brand-sub">Command Center</div>
-        </div>
-        <div className="nav-section">Core</div>
-        {['dashboard', 'log'].map(id => (
-          <button key={id} className={`nav-item ${activeTab===id?'active':''}`} onClick={()=>nav(id)}>
-            <span className="icon">{id==='dashboard'?'📊':'📋'}</span><span>{PAGE_TITLES[id]}</span>
-            {id==='dashboard' && <span className={`status-dot ${status}`}></span>}
-          </button>
-        ))}
-        <div className="nav-section">Analysis</div>
-        {['analysis', 'projects', 'departments'].map(id => (
-          <button key={id} className={`nav-item ${activeTab===id?'active':''}`} onClick={()=>nav(id)}>
-            <span className="icon">{id==='analysis'?'📈':id==='projects'?'🗂️':'🏢'}</span><span>{PAGE_TITLES[id]}</span>
-          </button>
-        ))}
-        <div className="nav-section">Intelligence</div>
-        {['forecast', 'insights', 'cashflow'].map(id => (
-          <button key={id} className={`nav-item ${activeTab===id?'active':''}`} onClick={()=>nav(id)}>
-            <span className="icon">{id==='forecast'?'🔮':id==='insights'?'🧠':'💧'}</span><span>{PAGE_TITLES[id]}</span>
-          </button>
-        ))}
-        
-        <div style={{flex: 1}}></div>
-        <div className="nav-section" style={{borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'16px'}}>System</div>
-        <button className="nav-item" onClick={() => setIsChangePwOpen(true)}>
-          <span className="icon">🔑</span><span>Change Password</span>
-        </button>
-        <button className="nav-item" onClick={() => { logout(); navigate('/login'); }} style={{color:'var(--red)'}}>
-          <span className="icon">🚪</span><span>Sign Out</span>
-        </button>
-      </nav>
-
-      <div className="main">
-        <div className="topbar">
-          <div><div className="topbar-title">{PAGE_TITLES[activeTab]}</div></div>
-          <div className="topbar-right">
-            <span className={`status-badge ${status}`}>{statusText}</span>
-            <span style={{fontSize:'11px',color:'var(--muted)'}}>{new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span>
-            <button className="btn-ui btn-primary" onClick={()=>navigate('/log')}>+ Add Transaction</button>
-          </div>
-        </div>
-        <div className="content">
-          <div className={activeTab === 'dashboard' ? 'page active' : 'page'} id="page-dashboard">{activeTab === 'dashboard' && renderDashboard()}</div>
-          <div className={activeTab === 'log' ? 'page active' : 'page'} id="page-log">{activeTab === 'log' && renderLog()}</div>
-          <div className={activeTab === 'analysis' ? 'page active' : 'page'} id="page-analysis">{activeTab === 'analysis' && renderAnalysis()}</div>
-          <div className={activeTab === 'projects' ? 'page active' : 'page'} id="page-projects">{activeTab === 'projects' && renderProjects()}</div>
-          <div className={activeTab === 'departments' ? 'page active' : 'page'} id="page-departments">{activeTab === 'departments' && renderDepartments()}</div>
-          <div className={activeTab === 'forecast' ? 'page active' : 'page'} id="page-forecast">{activeTab === 'forecast' && renderForecast()}</div>
-          <div className={activeTab === 'insights' ? 'page active' : 'page'} id="page-insights">{activeTab === 'insights' && renderInsights()}</div>
-          <div className={activeTab === 'cashflow' ? 'page active' : 'page'} id="page-cashflow">{activeTab === 'cashflow' && renderCashflow()}</div>
-        </div>
-      </div>
-
-      {isChangePwOpen && (
-        <ChangePwModal
-          onClose={() => setIsChangePwOpen(false)}
-          changePassword={changePassword}
-        />
-      )}
-
-      {/* Modal is removed in favor of redirection to Daily Log */}
-    </div>
+    <Layout
+      title={PAGE_TITLES[activeTab]}
+      subtitle={activeTab === 'dashboard' ? 'All KPIs auto-calculated from Daily Log · ANTI AI Private Limited' : undefined}
+    >
+      <div className={activeTab === 'dashboard' ? 'page active' : 'page'} id="page-dashboard">{activeTab === 'dashboard' && renderDashboard()}</div>
+      <div className={activeTab === 'log' ? 'page active' : 'page'} id="page-log">{activeTab === 'log' && renderLog()}</div>
+      <div className={activeTab === 'analysis' ? 'page active' : 'page'} id="page-analysis">{activeTab === 'analysis' && renderAnalysis()}</div>
+      <div className={activeTab === 'projects' ? 'page active' : 'page'} id="page-projects">{activeTab === 'projects' && renderProjects()}</div>
+      <div className={activeTab === 'departments' ? 'page active' : 'page'} id="page-departments">{activeTab === 'departments' && renderDepartments()}</div>
+      <div className={activeTab === 'forecast' ? 'page active' : 'page'} id="page-forecast">{activeTab === 'forecast' && renderForecast()}</div>
+      <div className={activeTab === 'insights' ? 'page active' : 'page'} id="page-insights">{activeTab === 'insights' && renderInsights()}</div>
+      <div className={activeTab === 'cashflow' ? 'page active' : 'page'} id="page-cashflow">{activeTab === 'cashflow' && renderCashflow()}</div>
+    </Layout>
   );
 }
+
 
 // ════════════════════════════════════════════════════════════════════
 // TABS COMPONENTS
@@ -1000,121 +948,5 @@ function CashFlowTab({ data, C }: any) {
   );
 }
 
-// ════════════════════════════════════════════════════════════════════
-// CHANGE PASSWORD MODAL
-// ════════════════════════════════════════════════════════════════════
-function ChangePwModal({
-  onClose,
-  changePassword,
-}: {
-  onClose: () => void;
-  changePassword: (current: string, next: string) => Promise<void>;
-}) {
-  const [currentPw, setCurrentPw] = useState('');
-  const [newPw, setNewPw] = useState('');
-  const [confirmPw, setConfirmPw] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [saving, setSaving] = useState(false);
+// Modal is removed in favor of Sidebar implementation
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (newPw.length < 8) {
-      setError('New password must be at least 8 characters.');
-      return;
-    }
-    if (newPw !== confirmPw) {
-      setError('New passwords do not match.');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      await changePassword(currentPw, newPw);
-      setSuccess(true);
-      setTimeout(() => onClose(), 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to change password');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div
-      className="modal-overlay"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="modal" style={{ maxWidth: '420px' }}>
-        <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          🔑 Change Password
-        </div>
-
-        {success ? (
-          <div style={{ textAlign: 'center', padding: '24px 0' }}>
-            <div style={{ fontSize: '36px', marginBottom: '12px' }}>✅</div>
-            <div style={{ fontWeight: 700, color: 'var(--green)', fontSize: '14px' }}>
-              Password changed successfully!
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '6px' }}>
-              Closing…
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="modal-form" style={{ gridTemplateColumns: '1fr' }}>
-            <div className="form-group">
-              <label>Current Password</label>
-              <input
-                type="password"
-                value={currentPw}
-                onChange={(e) => setCurrentPw(e.target.value)}
-                placeholder="Enter current password"
-                autoComplete="current-password"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>New Password</label>
-              <input
-                type="password"
-                value={newPw}
-                onChange={(e) => setNewPw(e.target.value)}
-                placeholder="Min. 8 characters"
-                autoComplete="new-password"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Confirm New Password</label>
-              <input
-                type="password"
-                value={confirmPw}
-                onChange={(e) => setConfirmPw(e.target.value)}
-                placeholder="Repeat new password"
-                autoComplete="new-password"
-                required
-              />
-            </div>
-
-            {error && (
-              <div style={{ color: 'var(--red)', fontSize: '11px', background: 'var(--danger-bg)', padding: '8px 12px', borderRadius: '6px' }}>
-                {error}
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button type="button" className="btn-ui btn-outline" onClick={onClose} disabled={saving}>
-                Cancel
-              </button>
-              <button type="submit" className="btn-ui btn-primary" disabled={saving}>
-                {saving ? 'Saving…' : 'Change Password'}
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-}

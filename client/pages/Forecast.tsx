@@ -131,46 +131,55 @@ export default function Forecast() {
       subtitle="Exponential smoothing · Auto-pulled from Daily Log · Dynamically date-aware"
     >
       {loading && <div className="text-center py-8 text-blue-mid text-sm">Loading…</div>}
-      {error   && <div className="mb-4 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">{error}</div>}
+      {error   && <div className="alert red" style={{ marginBottom: "12px" }}>{error}</div>}
 
       {/* Alpha Controls */}
-      <div className="bg-navy text-white px-6 py-3 rounded-lg mb-4 flex items-center justify-between">
-        <span className="text-xs font-bold uppercase tracking-wider">⚙ Smoothing Factor Controls</span>
-        <span className="text-xs opacity-70">F(t+1) = α1·A(t) + α2·A(t−1) + α3·A(t−2)</span>
+      <div style={{ background: "var(--navy)", color: "white", padding: "12px 24px", borderRadius: "8px", marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: "12px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px" }}>⚙ Smoothing Factor Controls</span>
+        <span style={{ fontSize: "11px", opacity: 0.7 }}>F(t+1) = α1·A(t) + α2·A(t−1) + α3·A(t−2)</span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
         <AlphaControl label="Revenue Alphas" alphas={revAlphas} onChange={setRevAlphas} />
         <AlphaControl label="Expense Alphas" alphas={expAlphas} onChange={setExpAlphas} />
       </div>
 
       {/* Opening Cash */}
-      <div className="bg-white border border-blue-pale rounded-lg p-4 mb-6 flex items-center gap-4">
-        <label className="text-xs font-bold text-navy uppercase tracking-wider whitespace-nowrap">
+      <div className="box mb-16" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "16px" }}>
+        <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--navy)", textTransform: "uppercase" }}>
           Opening Cash (₹)
         </label>
         <input
           type="number"
           value={openingCash}
           onChange={(e) => setOpeningCash(parseFloat(e.target.value) || 0)}
-          className="px-3 py-2 border border-blue-pale rounded-lg text-xs font-bold text-navy bg-background focus:outline-none focus:ring-2 focus:ring-navy w-40"
+          style={{
+            padding: "8px 12px",
+            border: "1.5px solid var(--f-border)",
+            borderRadius: "8px",
+            fontSize: "12px",
+            fontWeight: 700,
+            color: "var(--navy)",
+            background: "var(--background)",
+            width: "160px",
+          }}
         />
-        <span className="text-xs text-blue-mid">Starting cash balance for runway calculation</span>
+        <span style={{ fontSize: "11px", color: "var(--muted)" }}>Starting cash balance for runway calculation</span>
       </div>
 
       {/* Seed Actuals Used */}
-      <div className="bg-blue-pale rounded-lg p-4 mb-6">
-        <p className="text-xs font-bold text-navy uppercase tracking-wider mb-2">Actuals Used for Seeding</p>
-        <div className="grid grid-cols-2 gap-4">
+      <div className="box mb-16" style={{ padding: "16px", background: "var(--blue-pale)" }}>
+        <p style={{ fontSize: "11px", fontWeight: 700, color: "var(--navy)", textTransform: "uppercase", marginBottom: "8px" }}>Actuals Used for Seeding</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
           <div>
-            <p className="text-xs text-blue-mid font-semibold mb-1">Revenue: A(t), A(t−1), A(t−2)</p>
-            <p className="text-xs font-bold text-navy">
+            <p style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600, marginBottom: "4px" }}>Revenue: A(t), A(t−1), A(t−2)</p>
+            <p className="fw-bold" style={{ fontSize: "13px", color: "var(--navy)" }}>
               {forecast.revenueActuals.map(formatCurrency).join(" · ")}
             </p>
           </div>
           <div>
-            <p className="text-xs text-blue-mid font-semibold mb-1">Expense: A(t), A(t−1), A(t−2)</p>
-            <p className="text-xs font-bold text-navy">
+            <p style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 600, marginBottom: "4px" }}>Expense: A(t), A(t−1), A(t−2)</p>
+            <p className="fw-bold" style={{ fontSize: "13px", color: "var(--navy)" }}>
               {forecast.expenseActuals.map(formatCurrency).join(" · ")}
             </p>
           </div>
@@ -178,36 +187,38 @@ export default function Forecast() {
       </div>
 
       {/* Forecast Table */}
-      <div className="bg-white border border-blue-pale rounded-lg p-6 mb-6">
-        <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">
-          3-Month Forward Forecast
-          <span className="text-blue-mid font-normal ml-2">— dynamically derived from {currentMonth}</span>
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+      <div className="box mb-16">
+        <div className="box-title">
+          <span>3-Month Forward Forecast</span>
+          <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--muted)" }}>
+            — dynamically derived from {currentMonth}
+          </span>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table className="tbl">
             <thead>
-              <tr className="bg-navy text-white">
-                <th className="px-4 py-2 text-center font-bold">Month</th>
-                <th className="px-4 py-2 text-center font-bold">Forecast Revenue</th>
-                <th className="px-4 py-2 text-center font-bold">Forecast Expense</th>
-                <th className="px-4 py-2 text-center font-bold">Net CF</th>
-                <th className="px-4 py-2 text-center font-bold">Opening Cash</th>
-                <th className="px-4 py-2 text-center font-bold">Closing Cash</th>
-                <th className="px-4 py-2 text-center font-bold">Runway</th>
+              <tr style={{ background: "var(--navy)", color: "white" }}>
+                <th>Month</th>
+                <th>Forecast Revenue</th>
+                <th>Forecast Expense</th>
+                <th>Net CF</th>
+                <th>Opening Cash</th>
+                <th>Closing Cash</th>
+                <th>Runway</th>
               </tr>
             </thead>
             <tbody>
               {cfRows.map((row) => (
-                <tr key={row.month} className="border-b border-blue-pale text-center hover:bg-blue-pale/20">
-                  <td className="px-4 py-2 font-bold">{row.label}</td>
-                  <td className="px-4 py-2 text-success font-bold">{formatCurrency(row.revenue)}</td>
-                  <td className="px-4 py-2 text-danger">{formatCurrency(row.expense)}</td>
-                  <td className="px-4 py-2 font-bold" style={{ color: row.netCF >= 0 ? "#2E7D32" : "#C62828" }}>
+                <tr key={row.month} style={{ textAlign: "center" }}>
+                  <td className="fw-bold">{row.label}</td>
+                  <td className="fw-bold" style={{ color: "var(--green)" }}>{formatCurrency(row.revenue)}</td>
+                  <td className="fw-bold" style={{ color: "var(--red)" }}>{formatCurrency(row.expense)}</td>
+                  <td className="fw-bold" style={{ color: row.netCF >= 0 ? "var(--green)" : "var(--red)" }}>
                     {row.netCF >= 0 ? "+" : ""}{formatCurrency(row.netCF)}
                   </td>
-                  <td className="px-4 py-2">{formatCurrency(row.openCash)}</td>
-                  <td className="px-4 py-2 font-bold">{formatCurrency(row.closeCash)}</td>
-                  <td className="px-4 py-2">{row.runway}</td>
+                  <td>{formatCurrency(row.openCash)}</td>
+                  <td className="fw-bold">{formatCurrency(row.closeCash)}</td>
+                  <td>{row.runway}</td>
                 </tr>
               ))}
             </tbody>
@@ -216,52 +227,52 @@ export default function Forecast() {
       </div>
 
       {/* Chart: Actuals + Forecast */}
-      <div className="bg-white border border-blue-pale rounded-lg p-6 mb-6">
-        <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-1">
-          Revenue & Expenses — Actuals + Forecast
-        </h3>
-        <p className="text-xs text-blue-mid mb-4">Dashed line separates actuals from forecast period.</p>
-        <ResponsiveContainer width="100%" height={320}>
-          <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
-            <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 11 }} />
-            <YAxis stroke="#5a718a" style={{ fontSize: 11 }} tickFormatter={formatCurrency} />
-            <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }} />
-            <Legend />
-            {splitLabel && (
-              <ReferenceLine x={splitLabel} stroke="#1F3A5F" strokeDasharray="6 3" label={{ value: "Forecast →", position: "top", fontSize: 10, fill: "#1F3A5F" }} />
-            )}
-            <Line type="monotone" dataKey="Revenue" stroke="#2E7D32" strokeWidth={2} dot={{ fill: "#2E7D32", r: 3 }} />
-            <Line type="monotone" dataKey="Expenses" stroke="#C62828" strokeWidth={2} dot={{ fill: "#C62828", r: 3 }} />
-          </LineChart>
-        </ResponsiveContainer>
+      <div className="box mb-16">
+        <div className="box-title">Revenue & Expenses — Actuals + Forecast</div>
+        <div style={{ padding: "16px" }}>
+          <p style={{ fontSize: "11px", color: "var(--muted)", marginBottom: "12px" }}>Dashed line separates actuals from forecast period.</p>
+          <ResponsiveContainer width="100%" height={320}>
+            <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
+              <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 11 }} />
+              <YAxis stroke="#5a718a" style={{ fontSize: 11 }} tickFormatter={formatCurrency} />
+              <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }} />
+              <Legend />
+              {splitLabel && (
+                <ReferenceLine x={splitLabel} stroke="#1F3A5F" strokeDasharray="6 3" label={{ value: "Forecast →", position: "top", fontSize: 10, fill: "#1F3A5F" }} />
+              )}
+              <Line type="monotone" dataKey="Revenue" stroke="#2E7D32" strokeWidth={2} dot={{ fill: "#2E7D32", r: 3 }} />
+              <Line type="monotone" dataKey="Expenses" stroke="#C62828" strokeWidth={2} dot={{ fill: "#C62828", r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Insights */}
-      <div className="space-y-3">
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
         {lastCF && lastCF.netCF >= 0 ? (
-          <div className="border border-success-light bg-success-bg rounded-lg p-4 flex gap-3">
-            <span className="text-lg">🟢</span>
+          <div className="alert green" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <span style={{ fontSize: "18px" }}>🟢</span>
             <div>
-              <p className="text-xs font-bold text-navy mb-1">Positive cash flow projected</p>
-              <p className="text-xs text-blue-mid">Revenue exceeds expenses in all 3 forecast months.</p>
+              <p className="fw-bold" style={{ marginBottom: "2px" }}>Positive cash flow projected</p>
+              <p style={{ fontSize: "11px", opacity: 0.8 }}>Revenue exceeds expenses in all 3 forecast months.</p>
             </div>
           </div>
         ) : (
-          <div className="border border-danger-light bg-danger-bg rounded-lg p-4 flex gap-3">
-            <span className="text-lg">⚠️</span>
+          <div className="alert red" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <span style={{ fontSize: "18px" }}>⚠️</span>
             <div>
-              <p className="text-xs font-bold text-navy mb-1">Negative cash flow projected</p>
-              <p className="text-xs text-blue-mid">Monitor burn rate. Adjust alpha weights or review expense base.</p>
+              <p className="fw-bold" style={{ marginBottom: "2px" }}>Negative cash flow projected</p>
+              <p style={{ fontSize: "11px", opacity: 0.8 }}>Monitor burn rate. Adjust alpha weights or review expense base.</p>
             </div>
           </div>
         )}
         {lastCF && typeof lastCF.runway === "string" && !lastCF.runway.includes("∞") && parseFloat(lastCF.runway) < 3 && (
-          <div className="border border-danger-light bg-danger-bg rounded-lg p-4 flex gap-3">
-            <span className="text-lg">🚨</span>
+          <div className="alert red" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <span style={{ fontSize: "18px" }}>🚨</span>
             <div>
-              <p className="text-xs font-bold text-navy mb-1">Runway below 3 months</p>
-              <p className="text-xs text-blue-mid">Take immediate cash action.</p>
+              <p className="fw-bold" style={{ marginBottom: "2px" }}>Runway below 3 months</p>
+              <p style={{ fontSize: "11px", opacity: 0.8 }}>Take immediate cash action.</p>
             </div>
           </div>
         )}
@@ -269,3 +280,4 @@ export default function Forecast() {
     </Layout>
   );
 }
+

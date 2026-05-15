@@ -140,49 +140,63 @@ export default function FinancialAnalysis() {
       subtitle={`Auto-aggregated from Daily Log · ${periodLabel(period)}`}
     >
       {loading && <div className="text-center py-8 text-blue-mid text-sm">Loading…</div>}
-      {error   && <div className="mb-4 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">{error}</div>}
+      {error   && <div className="alert red" style={{ marginBottom: "12px" }}>{error}</div>}
 
       {/* Period Filter */}
       <PeriodFilter value={period} onChange={setPeriod} transactions={transactions} showAllOption />
 
       {/* ── Actual vs Forecast vs Target ─────────────────────────── */}
-      <div className="bg-white border border-blue-pale rounded-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-bold text-navy uppercase tracking-wider">
-            Actual vs Forecast vs Target
-          </h3>
-          <span className="text-xs text-blue-mid">Click any Target cell to edit</span>
+      <div className="box mb-16">
+        <div className="box-title">
+          <span>Actual vs Forecast vs Target</span>
+          <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--muted)" }}>
+            Click any Target cell to edit
+          </span>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+        <div style={{ overflowX: "auto" }}>
+          <table className="tbl">
             <thead>
-              <tr className="bg-blue-pale border-b border-blue-pale">
-                <th className="px-4 py-2 text-left font-bold text-navy">Metric</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Actual</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Forecast (next mo.)</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Target</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Variance (Act−Tgt)</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Forecast Gap (Fcst−Tgt)</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Signal</th>
+              <tr>
+                <th>Metric</th>
+                <th>Actual</th>
+                <th>Forecast (next mo.)</th>
+                <th>Target</th>
+                <th>Variance (Act−Tgt)</th>
+                <th>Forecast Gap (Fcst−Tgt)</th>
+                <th style={{ textAlign: "center" }}>Signal</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { label: "Revenue",  actual: totalRev,    fcst: forecastRev,    tgt: targetRev,    isRev: true  },
-                { label: "Expenses", actual: totalExp,    fcst: forecastExp,    tgt: targetExp,    isRev: false },
-                { label: "Profit",   actual: totalProfit, fcst: forecastProfit, tgt: targetProfit, isRev: true  },
+                { label: "Revenue",  actual: totalRev,    fcst: forecastRev,    tgt: targetRev,    type: "rev"  },
+                { label: "Expenses", actual: totalExp,    fcst: forecastExp,    tgt: targetExp,    type: "exp"  },
+                { label: "Profit",   actual: totalProfit, fcst: forecastProfit, tgt: targetProfit, type: "profit" },
               ].map((row) => {
                 const variance    = row.actual - row.tgt;
                 const fcstGap     = row.fcst - row.tgt;
                 const signal      = getSignal(row.actual, row.tgt);
+                
+                let actualColor = "var(--text)";
+                if (row.type === "rev") actualColor = "var(--green)";
+                else if (row.type === "exp") actualColor = "var(--red)";
+                else if (row.type === "profit") actualColor = "var(--navy)";
+
+                let varColor = "var(--text)";
+                if (row.type === "rev" || row.type === "profit") varColor = variance >= 0 ? "var(--green)" : "var(--red)";
+                else if (row.type === "exp") varColor = variance <= 0 ? "var(--green)" : "var(--red)"; // Lower expense is good
+
+                let gapColor = "var(--text)";
+                if (row.type === "rev" || row.type === "profit") gapColor = fcstGap >= 0 ? "var(--green)" : "var(--red)";
+                else if (row.type === "exp") gapColor = fcstGap <= 0 ? "var(--green)" : "var(--red)";
+
                 return (
-                  <tr key={row.label} className="border-b border-blue-pale hover:bg-blue-pale/20">
-                    <td className="px-4 py-3 font-bold text-navy">{row.label}</td>
-                    <td className="px-4 py-3 font-bold" style={{ color: row.actual >= 0 ? "#2E7D32" : "#C62828" }}>
+                  <tr key={row.label}>
+                    <td className="fw-bold">{row.label}</td>
+                    <td className="fw-bold" style={{ color: actualColor }}>
                       {formatCurrency(row.actual)}
                     </td>
-                    <td className="px-4 py-3 text-blue-mid font-semibold">{formatCurrency(row.fcst)}</td>
-                    <td className="px-4 py-3">
+                    <td className="fw-bold" style={{ color: "var(--navy)" }}>{formatCurrency(row.fcst)}</td>
+                    <td>
                       {row.label !== "Profit" ? (
                         <EditableTargetCell
                           value={row.label === "Revenue" ? targetRev : targetExp}
@@ -191,17 +205,17 @@ export default function FinancialAnalysis() {
                           }
                         />
                       ) : (
-                        <span className="text-navy font-bold">{formatCurrency(targetProfit)}</span>
+                        <span className="fw-bold" style={{ color: "var(--navy)" }}>{formatCurrency(targetProfit)}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-bold" style={{ color: variance >= 0 ? "#2E7D32" : "#C62828" }}>
+                    <td className="fw-bold" style={{ color: varColor }}>
                       {variance >= 0 ? "+" : ""}{formatCurrency(variance)}
                     </td>
-                    <td className="px-4 py-3 font-bold" style={{ color: fcstGap >= 0 ? "#2E7D32" : "#C62828" }}>
+                    <td className="fw-bold" style={{ color: gapColor }}>
                       {fcstGap >= 0 ? "+" : ""}{formatCurrency(fcstGap)}
                     </td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${SIGNAL_STYLE[signal]}`}>
+                    <td style={{ textAlign: "center" }}>
+                      <span className={`tag ${signal}`}>
                         {SIGNAL_LABEL[signal]} Target
                       </span>
                     </td>
@@ -214,62 +228,66 @@ export default function FinancialAnalysis() {
       </div>
 
       {/* ── Charts Row ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-6 mb-6">
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">Revenue & Expense Trend</h3>
-          {chartData.length === 0 ? (
-            <div className="flex items-center justify-center h-[250px] text-blue-mid text-xs">No data for period</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
-                <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 11 }} />
-                <YAxis stroke="#5a718a" style={{ fontSize: 11 }} tickFormatter={formatCurrency} />
-                <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }} />
-                <Legend />
-                <Bar dataKey="Revenue" fill="#2E7D32" radius={4} />
-                <Bar dataKey="Expenses" fill="#C62828" radius={4} />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "24px" }}>
+        <div className="box">
+          <div className="box-title">Revenue & Expense Trend</div>
+          <div style={{ padding: "16px" }}>
+            {chartData.length === 0 ? (
+              <div className="empty" style={{ height: "250px" }}>No data for period</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
+                  <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 11 }} />
+                  <YAxis stroke="#5a718a" style={{ fontSize: 11 }} tickFormatter={formatCurrency} />
+                  <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }} />
+                  <Legend />
+                  <Bar dataKey="Revenue" fill="#2E7D32" radius={4} />
+                  <Bar dataKey="Expenses" fill="#C62828" radius={4} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
 
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">Profit Trend</h3>
-          {profitData.length === 0 ? (
-            <div className="flex items-center justify-center h-[250px] text-blue-mid text-xs">No data for period</div>
-          ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={profitData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
-                <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 11 }} />
-                <YAxis stroke="#5a718a" style={{ fontSize: 11 }} tickFormatter={formatCurrency} />
-                <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }} />
-                <Line type="monotone" dataKey="Profit" stroke="#1F3A5F" strokeWidth={2} dot={{ fill: "#1F3A5F" }} />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
+        <div className="box">
+          <div className="box-title">Profit Trend</div>
+          <div style={{ padding: "16px" }}>
+            {profitData.length === 0 ? (
+              <div className="empty" style={{ height: "250px" }}>No data for period</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={profitData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
+                  <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 11 }} />
+                  <YAxis stroke="#5a718a" style={{ fontSize: 11 }} tickFormatter={formatCurrency} />
+                  <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }} />
+                  <Line type="monotone" dataKey="Profit" stroke="#1F3A5F" strokeWidth={2} dot={{ fill: "#1F3A5F" }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ── Monthly Performance Table ─────────────────────────────── */}
-      <div className="bg-white border border-blue-pale rounded-lg p-4 mb-6">
-        <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">Monthly Performance Table</h3>
+      <div className="box mb-16">
+        <div className="box-title">Monthly Performance Table</div>
         {months.length === 0 ? (
-          <p className="text-blue-mid text-xs py-4 text-center">No transactions for selected period</p>
+          <div className="empty" style={{ padding: "40px" }}>No transactions for selected period</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div style={{ overflowX: "auto" }}>
+            <table className="tbl">
               <thead>
-                <tr className="bg-blue-pale border-b border-blue-pale">
-                  <th className="px-4 py-2 text-left font-bold text-navy">Month</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Revenue</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Expenses</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Net Profit</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Margin</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Fixed Cost</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Variable Cost</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Status</th>
+                <tr>
+                  <th>Month</th>
+                  <th>Revenue</th>
+                  <th>Expenses</th>
+                  <th>Net Profit</th>
+                  <th>Margin</th>
+                  <th>Fixed Cost</th>
+                  <th>Variable Cost</th>
+                  <th style={{ textAlign: "center" }}>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -278,16 +296,16 @@ export default function FinancialAnalysis() {
                   const net = row.rev - row.exp;
                   const margin = row.rev > 0 ? net / row.rev : 0;
                   return (
-                    <tr key={m} className="border-b border-blue-pale hover:bg-blue-pale/20 transition">
-                      <td className="px-4 py-2 font-bold">{friendlyMonth(m)}</td>
-                      <td className="px-4 py-2 text-success font-bold">{formatCurrency(row.rev)}</td>
-                      <td className="px-4 py-2 text-danger">{formatCurrency(row.exp)}</td>
-                      <td className="px-4 py-2 font-bold" style={{ color: net >= 0 ? "#2E7D32" : "#C62828" }}>{formatCurrency(net)}</td>
-                      <td className="px-4 py-2">{formatPercent(margin)}</td>
-                      <td className="px-4 py-2">{formatCurrency(row.fixed)}</td>
-                      <td className="px-4 py-2">{formatCurrency(row.variable)}</td>
-                      <td className="px-4 py-2">
-                        <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${net >= 0 ? "bg-success-bg text-success" : "bg-danger-bg text-danger"}`}>
+                    <tr key={m}>
+                      <td className="fw-bold">{friendlyMonth(m)}</td>
+                      <td className="fw-bold" style={{ color: "var(--green)" }}>{formatCurrency(row.rev)}</td>
+                      <td className="fw-bold" style={{ color: "var(--red)" }}>{formatCurrency(row.exp)}</td>
+                      <td className="fw-bold" style={{ color: "var(--navy)" }}>{formatCurrency(net)}</td>
+                      <td>{formatPercent(margin)}</td>
+                      <td>{formatCurrency(row.fixed)}</td>
+                      <td>{formatCurrency(row.variable)}</td>
+                      <td style={{ textAlign: "center" }}>
+                        <span className={`tag ${net >= 0 ? "green" : "red"}`}>
                           {net >= 0 ? "Profitable" : "Loss"}
                         </span>
                       </td>
@@ -301,26 +319,26 @@ export default function FinancialAnalysis() {
       </div>
 
       {/* ── Top Customers ─────────────────────────────────────────── */}
-      <div className="bg-white border border-blue-pale rounded-lg p-4">
-        <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">Top Customers by Revenue</h3>
+      <div className="box">
+        <div className="box-title">Top Customers by Revenue</div>
         {customers.length === 0 ? (
-          <p className="text-blue-mid text-xs py-4 text-center">No customer revenue data for period</p>
+          <div className="empty" style={{ padding: "40px" }}>No customer revenue data for period</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div style={{ overflowX: "auto" }}>
+            <table className="tbl">
               <thead>
-                <tr className="bg-blue-pale border-b border-blue-pale">
-                  <th className="px-4 py-2 text-left font-bold text-navy">Customer</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">Revenue</th>
-                  <th className="px-4 py-2 text-left font-bold text-navy">% Share</th>
+                <tr>
+                  <th>Customer</th>
+                  <th>Revenue</th>
+                  <th>% Share</th>
                 </tr>
               </thead>
               <tbody>
                 {customers.map(([name, rev]) => (
-                  <tr key={name} className="border-b border-blue-pale hover:bg-blue-pale/20">
-                    <td className="px-4 py-2 font-bold">{name}</td>
-                    <td className="px-4 py-2 text-success font-bold">{formatCurrency(rev)}</td>
-                    <td className="px-4 py-2">{totalRev > 0 ? formatPercent(rev / totalRev) : "—"}</td>
+                  <tr key={name}>
+                    <td className="fw-bold">{name}</td>
+                    <td className="fw-bold" style={{ color: "var(--green)" }}>{formatCurrency(rev)}</td>
+                    <td>{totalRev > 0 ? formatPercent(rev / totalRev) : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -331,3 +349,4 @@ export default function FinancialAnalysis() {
     </Layout>
   );
 }
+

@@ -82,34 +82,37 @@ export default function Departments() {
       subtitle="Budget vs Actual · Dynamic allocation · Auto from Daily Log"
     >
       {loading && <div className="text-center py-8 text-blue-mid text-sm">Loading…</div>}
-      {error   && <div className="mb-4 px-3 py-2 bg-danger-bg text-danger text-xs rounded-lg">{error}</div>}
+      {error   && <div className="alert red" style={{ marginBottom: "12px" }}>{error}</div>}
 
       {/* Budget Base Toggle */}
-      <div className="bg-white border border-blue-pale rounded-lg p-4 mb-6 flex items-center justify-between flex-wrap gap-3">
+      <div className="box mb-16" style={{ padding: "16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <p className="text-xs font-bold text-navy uppercase tracking-wider mb-1">Budget Base</p>
-          <p className="text-xs text-blue-mid">
+          <p style={{ fontSize: "11px", fontWeight: 700, color: "var(--navy)", textTransform: "uppercase", marginBottom: "4px" }}>Budget Base</p>
+          <p style={{ fontSize: "11px", color: "var(--muted)" }}>
             {useForecasted
               ? `Forecasted Expense (next month): ${formatCurrency(forecastedExpense)}`
               : `Actual Total Revenue: ${formatCurrency(totalRevenue)}`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div style={{ display: "flex", gap: "8px" }}>
           <button
             onClick={() => setUseForecasted(true)}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${useForecasted ? "bg-navy text-white" : "bg-blue-pale text-navy hover:bg-blue-mid hover:text-white"}`}
+            className={`btn-ui ${useForecasted ? "btn-primary" : "btn-outline"}`}
+            style={{ fontSize: "11px", padding: "6px 12px" }}
           >
             Forecasted Expense
           </button>
           <button
             onClick={() => setUseForecasted(false)}
-            className={`px-3 py-1.5 text-xs font-bold rounded-lg transition ${!useForecasted ? "bg-navy text-white" : "bg-blue-pale text-navy hover:bg-blue-mid hover:text-white"}`}
+            className={`btn-ui ${!useForecasted ? "btn-primary" : "btn-outline"}`}
+            style={{ fontSize: "11px", padding: "6px 12px" }}
           >
             Actual Revenue
           </button>
           <button
             onClick={reset}
-            className="px-3 py-1.5 text-xs font-bold rounded-lg border border-blue-pale text-blue-mid hover:bg-blue-pale transition"
+            className="btn-ui btn-outline"
+            style={{ fontSize: "11px", padding: "6px 12px" }}
           >
             Reset Defaults
           </button>
@@ -118,60 +121,62 @@ export default function Departments() {
 
       {/* Allocation warning */}
       {pctOff && (
-        <div className="mb-4 px-4 py-3 bg-warning-bg border border-warning-light text-warning text-xs rounded-lg font-semibold">
+        <div className="alert red" style={{ marginBottom: "16px" }}>
           ⚠ Allocations sum to {formatPercent(totalPct)} — adjust to reach 100%
         </div>
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <div className="text-xs font-bold text-blue-mid uppercase tracking-wider mb-2">Overspending</div>
-          <div className="text-2xl font-bold text-danger">{overcount}</div>
-          <div className="text-xs text-blue-mid">Departments over budget</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" }}>
+        <div className="box" style={{ padding: "16px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Overspending</div>
+          <div style={{ fontSize: "24px", fontWeight: 800, color: "var(--red)" }}>{overcount}</div>
+          <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Departments over budget</div>
         </div>
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <div className="text-xs font-bold text-blue-mid uppercase tracking-wider mb-2">Near Limit</div>
-          <div className="text-2xl font-bold text-warning">{nearcount}</div>
-          <div className="text-xs text-blue-mid">80–100% utilized</div>
+        <div className="box" style={{ padding: "16px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Near Limit</div>
+          <div style={{ fontSize: "24px", fontWeight: 800, color: "var(--orange)" }}>{nearcount}</div>
+          <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>80–100% utilized</div>
         </div>
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <div className="text-xs font-bold text-blue-mid uppercase tracking-wider mb-2">On Track</div>
-          <div className="text-2xl font-bold text-success">{okcount}</div>
-          <div className="text-xs text-blue-mid">Under 80% utilized</div>
+        <div className="box" style={{ padding: "16px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>On Track</div>
+          <div style={{ fontSize: "24px", fontWeight: 800, color: "var(--green)" }}>{okcount}</div>
+          <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>Under 80% utilized</div>
         </div>
-        <div className="bg-white border border-blue-pale rounded-lg p-4">
-          <div className="text-xs font-bold text-blue-mid uppercase tracking-wider mb-2">Forecast Base</div>
-          <div className="text-2xl font-bold text-navy">{formatCurrency(budgetBase)}</div>
-          <div className="text-xs text-blue-mid">{useForecasted ? "Next mo. forecast" : "Total revenue"}</div>
+        <div className="box" style={{ padding: "16px" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.5px", marginBottom: "8px" }}>Forecast Base</div>
+          <div style={{ fontSize: "24px", fontWeight: 800, color: "var(--navy)" }}>{formatCurrency(budgetBase)}</div>
+          <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "4px" }}>{useForecasted ? "Next mo. forecast" : "Total revenue"}</div>
         </div>
       </div>
 
       {/* Budget vs Actual Table with editable allocation */}
-      <div className="bg-white border border-blue-pale rounded-lg p-6 mb-6">
-        <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-1">
-          Department Budget vs Actual
-        </h3>
-        <p className="text-xs text-blue-mid mb-4">Edit the Alloc % column to redistribute budget dynamically.</p>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+      <div className="box mb-16">
+        <div className="box-title">
+          <span>Department Budget vs Actual</span>
+          <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--muted)", marginLeft: "8px" }}>
+            Edit Alloc % to redistribute budget
+          </span>
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          <table className="tbl">
             <thead>
-              <tr className="bg-blue-pale border-b border-blue-pale">
-                <th className="px-4 py-2 text-left font-bold text-navy">Department</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Alloc %</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Budget</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Actual Spend</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Variance</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Utilized %</th>
-                <th className="px-4 py-2 text-left font-bold text-navy">Status</th>
+              <tr>
+                <th>Department</th>
+                <th>Alloc %</th>
+                <th>Budget</th>
+                <th>Actual Spend</th>
+                <th>Variance</th>
+                <th>Utilized %</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {depts.map((dept) => (
-                <tr key={dept.name} className="border-b border-blue-pale hover:bg-blue-pale/20 transition">
-                  <td className="px-4 py-2 font-bold">{dept.name}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-1">
+                <tr key={dept.name}>
+                  <td className="fw-bold">{dept.name}</td>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                       <input
                         type="number"
                         min={0}
@@ -179,34 +184,38 @@ export default function Departments() {
                         step={1}
                         value={Math.round(dept.alloc * 100)}
                         onChange={(e) => update(dept.name, parseFloat(e.target.value) || 0)}
-                        className="w-16 px-2 py-1 border-2 border-blue-pale rounded text-xs font-bold text-center focus:outline-none focus:border-navy"
+                        style={{
+                          width: "50px",
+                          padding: "4px",
+                          border: "1.5px solid var(--f-border)",
+                          borderRadius: "4px",
+                          textAlign: "center",
+                          fontSize: "11px",
+                          fontWeight: 700,
+                        }}
                       />
-                      <span className="text-blue-mid">%</span>
+                      <span style={{ color: "var(--muted)", fontSize: "11px" }}>%</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2">{formatCurrency(dept.budget)}</td>
-                  <td className="px-4 py-2 font-bold">{formatCurrency(dept.actual)}</td>
-                  <td className="px-4 py-2 font-bold" style={{ color: dept.variance >= 0 ? "#2E7D32" : "#C62828" }}>
+                  <td>{formatCurrency(dept.budget)}</td>
+                  <td className="fw-bold">{formatCurrency(dept.actual)}</td>
+                  <td className="fw-bold" style={{ color: dept.variance >= 0 ? "var(--green)" : "var(--red)" }}>
                     {dept.variance >= 0 ? "+" : ""}{formatCurrency(dept.variance)}
                   </td>
-                  <td className="px-4 py-2">
-                    {formatPercent(dept.utilization)}
-                    <div className="h-1.5 bg-blue-pale rounded-full overflow-hidden mt-1">
+                  <td>
+                    <div style={{ fontSize: "11px", marginBottom: "4px" }}>{formatPercent(dept.utilization)}</div>
+                    <div className="h-1.5 bg-blue-pale rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
                         style={{
                           width: Math.min(dept.utilization, 1) * 100 + "%",
-                          backgroundColor: dept.utilization > 1 ? "#C62828" : dept.utilization >= 0.8 ? "#E65100" : "#2E7D32",
+                          backgroundColor: dept.utilization > 1 ? "var(--red)" : dept.utilization >= 0.8 ? "var(--orange)" : "var(--green)",
                         }}
                       />
                     </div>
                   </td>
-                  <td className="px-4 py-2">
-                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-semibold ${
-                      dept.statusVariant === "red"     ? "bg-danger-bg text-danger"
-                    : dept.statusVariant === "warning" ? "bg-warning-bg text-warning"
-                    :                                    "bg-success-bg text-success"
-                    }`}>
+                  <td>
+                    <span className={`tag ${dept.statusVariant}`}>
                       {dept.status}
                     </span>
                   </td>
@@ -214,13 +223,13 @@ export default function Departments() {
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-blue-pale border-t-2 border-blue-mid">
-                <td className="px-4 py-2 font-bold text-navy">TOTAL</td>
-                <td className="px-4 py-2 font-bold" style={{ color: pctOff ? "#C62828" : "#2E7D32" }}>
+              <tr style={{ background: "var(--blue-pale)", fontWeight: 800 }}>
+                <td style={{ color: "var(--navy)" }}>TOTAL</td>
+                <td style={{ color: pctOff ? "var(--red)" : "var(--green)" }}>
                   {formatPercent(totalPct)}
                 </td>
-                <td className="px-4 py-2 font-bold">{formatCurrency(depts.reduce((s,d)=>s+d.budget,0))}</td>
-                <td className="px-4 py-2 font-bold">{formatCurrency(totalSpend)}</td>
+                <td>{formatCurrency(depts.reduce((s,d)=>s+d.budget,0))}</td>
+                <td>{formatCurrency(totalSpend)}</td>
                 <td colSpan={3} />
               </tr>
             </tfoot>
@@ -229,26 +238,27 @@ export default function Departments() {
       </div>
 
       {/* Chart */}
-      <div className="bg-white border border-blue-pale rounded-lg p-6">
-        <h3 className="text-xs font-bold text-navy uppercase tracking-wider mb-4">Budget vs Actual Spend</h3>
-        {totalSpend === 0 ? (
-          <div className="flex items-center justify-center h-[300px] text-blue-mid text-xs">
-            No expense transactions yet
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
-              <XAxis dataKey="name" stroke="#5a718a" style={{ fontSize: 12 }} />
-              <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
-              <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }} />
-              <Legend />
-              <Bar dataKey="Budget" fill="#1F3A5F" radius={4} opacity={0.5} />
-              <Bar dataKey="Actual Spend" fill="#C62828" radius={4} />
-            </BarChart>
-          </ResponsiveContainer>
-        )}
+      <div className="box">
+        <div className="box-title">Budget vs Actual Spend</div>
+        <div style={{ padding: "16px" }}>
+          {totalSpend === 0 ? (
+            <div className="empty" style={{ height: "300px" }}>No expense transactions yet</div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
+                <XAxis dataKey="name" stroke="#5a718a" style={{ fontSize: 12 }} />
+                <YAxis stroke="#5a718a" style={{ fontSize: 12 }} tickFormatter={formatCurrency} />
+                <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }} />
+                <Legend />
+                <Bar dataKey="Budget" fill="#1F3A5F" radius={4} opacity={0.5} />
+                <Bar dataKey="Actual Spend" fill="#C62828" radius={4} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
     </Layout>
   );
 }
+

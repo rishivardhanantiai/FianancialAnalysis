@@ -1,143 +1,133 @@
-import { Link, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogOut } from "lucide-react";
+import { useState } from "react";
+import { ChangePwModal } from "./ChangePwModal";
 
 export default function Sidebar() {
+  const { logout, changePassword } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const [isChangePwOpen, setIsChangePwOpen] = useState(false);
 
-  const navItems = [
-    {
-      icon: "📊",
-      label: "Dashboard",
-      path: "/",
-    },
-    {
-      icon: "📋",
-      label: "Daily Log",
-      path: "/log",
-    },
-    {
-      icon: "📈",
-      label: "Financial Analysis",
-      path: "/analysis",
-    },
-    {
-      icon: "🗂️",
-      label: "Projects",
-      path: "/projects",
-    },
-    {
-      icon: "🏢",
-      label: "Departments",
-      path: "/departments",
-    },
-    {
-      icon: "🔮",
-      label: "Forecast",
-      path: "/forecast",
-    },
-    {
-      icon: "🧠",
-      label: "AI Insights",
-      path: "/insights",
-    },
-    {
-      icon: "💧",
-      label: "Cash Flow",
-      path: "/cashflow",
-    },
-  ];
+  // Determine active tab from pathname
+  const path = location.pathname;
+  let activeTab = "dashboard";
+  if (path === "/log") activeTab = "log";
+  else if (path === "/analysis") activeTab = "analysis";
+  else if (path === "/projects") activeTab = "projects";
+  else if (path === "/departments") activeTab = "departments";
+  else if (path === "/forecast") activeTab = "forecast";
+  else if (path === "/insights") activeTab = "insights";
+  else if (path === "/cashflow") activeTab = "cashflow";
+  else if (path === "/") activeTab = "dashboard";
 
-  const isActive = (path: string) => location.pathname === path;
+  const PAGE_TITLES: Record<string, string> = {
+    dashboard: "Dashboard",
+    log: "Daily Log",
+    analysis: "Financial Analysis",
+    projects: "Project Tracker",
+    departments: "Department Tracker",
+    forecast: "3-Month Forecast",
+    insights: "AI Insights",
+    cashflow: "Cash Flow",
+  };
+
+  const nav = (id: string) => {
+    navigate(id === "dashboard" ? "/" : `/${id}`);
+  };
+
+  // Mock status for now, or could be passed as props/context
+  const status = "red";
 
   return (
-    <div className="w-56 bg-navy-dark text-white flex flex-col h-screen fixed left-0 top-0 overflow-y-auto">
-      {/* Brand */}
-      <div className="p-4 border-b border-navy-light flex flex-col items-center">
-        <img
-          src="/logo.jpg"
-          alt="ANTI AI Logo"
-          className="w-12 h-12 mb-2"
-        />
-        <div className="text-xs text-blue-pale/80 uppercase tracking-widest font-semibold text-center">
-          Command Center
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 py-3">
-        <div className="px-3 py-2">
-          <div className="text-xs font-bold text-white/40 uppercase tracking-wider px-3 mb-2">
-            Core
-          </div>
-          {navItems.slice(0, 2).map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-2 px-3 py-2 mx-1 rounded-lg text-xs transition-all ${
-                isActive(item.path)
-                  ? "bg-white/15 text-white font-bold"
-                  : "text-white/70 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <span className="text-sm">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
+    <>
+      <nav className="sidebar">
+        <div className="brand">
+          <img src="/logo.jpg" alt="ANTI AI Logo" className="brand-logo" />
+          <div className="brand-name">ANTI AI</div>
+          <div className="brand-sub">Command Center</div>
         </div>
 
-        <div className="px-3 py-2 mt-2">
-          <div className="text-xs font-bold text-white/40 uppercase tracking-wider px-3 mb-2">
-            Analysis
-          </div>
-          {navItems.slice(2, 5).map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-2 px-3 py-2 mx-1 rounded-lg text-xs transition-all ${
-                isActive(item.path)
-                  ? "bg-white/15 text-white font-bold"
-                  : "text-white/70 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <span className="text-sm">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
-        </div>
+        <div className="nav-section">Core</div>
+        {[
+          { id: "dashboard", icon: "📊" },
+          { id: "log", icon: "📋" },
+        ].map(({ id, icon }) => (
+          <button
+            key={id}
+            className={`nav-item ${activeTab === id ? "active" : ""}`}
+            onClick={() => nav(id)}
+          >
+            <span className="icon">{icon}</span>
+            <span>{PAGE_TITLES[id]}</span>
+            {id === "dashboard" && <span className={`status-dot ${status}`}></span>}
+          </button>
+        ))}
 
-        <div className="px-3 py-2 mt-2">
-          <div className="text-xs font-bold text-white/40 uppercase tracking-wider px-3 mb-2">
-            Intelligence
-          </div>
-          {navItems.slice(5).map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-2 px-3 py-2 mx-1 rounded-lg text-xs transition-all ${
-                isActive(item.path)
-                  ? "bg-white/15 text-white font-bold"
-                  : "text-white/70 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              <span className="text-sm">{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          ))}
+        <div className="nav-section">Analysis</div>
+        {[
+          { id: "analysis", icon: "📈" },
+          { id: "projects", icon: "🗂️" },
+          { id: "departments", icon: "🏢" },
+        ].map(({ id, icon }) => (
+          <button
+            key={id}
+            className={`nav-item ${activeTab === id ? "active" : ""}`}
+            onClick={() => nav(id)}
+          >
+            <span className="icon">{icon}</span>
+            <span>{PAGE_TITLES[id]}</span>
+          </button>
+        ))}
+
+        <div className="nav-section">Intelligence</div>
+        {[
+          { id: "forecast", icon: "🔮" },
+          { id: "insights", icon: "🧠" },
+          { id: "cashflow", icon: "💧" },
+        ].map(({ id, icon }) => (
+          <button
+            key={id}
+            className={`nav-item ${activeTab === id ? "active" : ""}`}
+            onClick={() => nav(id)}
+          >
+            <span className="icon">{icon}</span>
+            <span>{PAGE_TITLES[id]}</span>
+          </button>
+        ))}
+
+        <div style={{ flex: 1 }}></div>
+
+        <div
+          className="nav-section"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.05)", paddingTop: "16px" }}
+        >
+          System
         </div>
+        <button className="nav-item" onClick={() => setIsChangePwOpen(true)}>
+          <span className="icon">🔑</span>
+          <span>Change Password</span>
+        </button>
+        <button
+          className="nav-item"
+          onClick={() => {
+            logout();
+            navigate("/login");
+          }}
+          style={{ color: "var(--red)" }}
+        >
+          <span className="icon">🚪</span>
+          <span>Sign Out</span>
+        </button>
       </nav>
 
-      {/* Logout */}
-      <div className="p-3 border-t border-navy-light">
-        <button
-          onClick={logout}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-danger/10 text-danger-light hover:bg-danger/20 transition text-xs font-semibold"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </button>
-      </div>
-    </div>
+      {isChangePwOpen && (
+        <ChangePwModal
+          onClose={() => setIsChangePwOpen(false)}
+          changePassword={changePassword}
+        />
+      )}
+    </>
   );
 }
+
