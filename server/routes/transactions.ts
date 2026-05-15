@@ -23,6 +23,9 @@ function mapRowToTransaction(row: any): TransactionRecord {
     costt: row.costt ?? "",
     owner: row.owner ?? "",
     notes: row.notes ?? "",
+    business_unit: row.business_unit ?? "",
+    invoice_number: row.invoice_number ?? "",
+    invoice_url: row.invoice_url ?? "",
     created_at: row.created_at,
   };
 }
@@ -103,6 +106,9 @@ export const createTransaction: RequestHandler = async (req, res) => {
     costt: validation.data.costt ?? "",
     owner: validation.data.owner ?? "",
     notes: validation.data.notes ?? "",
+    business_unit: validation.data.business_unit ?? "",
+    invoice_number: validation.data.invoice_number ?? "",
+    invoice_url: validation.data.invoice_url ?? "",
   };
 
   try {

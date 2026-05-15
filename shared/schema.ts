@@ -12,6 +12,9 @@ export const transactionSchema = z
     costt: z.string(),
     owner: z.string(),
     notes: z.string().optional(),
+    business_unit: z.string().optional(),
+    invoice_number: z.string().optional(),
+    invoice_url: z.string().optional(),
   })
   .refine(
     (data) => {

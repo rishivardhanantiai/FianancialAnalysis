@@ -23,7 +23,15 @@ export interface TransactionRecord {
   costt: string;
   owner: string;
   notes: string;
+  business_unit: string;
+  invoice_number: string;
+  invoice_url: string;
   created_at?: string;
+}
+
+export interface InvoiceUploadResponse {
+  url: string;
+  path: string;
 }
 
 export interface TransactionsListResponse {
@@ -41,6 +49,9 @@ export interface TransactionCreateRequest {
   costt: string;
   owner: string;
   notes: string;
+  business_unit: string;
+  invoice_number: string;
+  invoice_url: string;
 }
 
 export interface TransactionCreateResponse {

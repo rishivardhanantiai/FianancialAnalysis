@@ -27,54 +27,54 @@ const OPENING_CASH = 500000;
 type FinanceTransaction = TransactionRecord;
 
 const INITIAL_DATA: Array<Omit<FinanceTransaction, 'id' | 'created_at'>> = [
-  {date:'2026-01-03',type:'Revenue',amount:120000,dept:'Sales',project:'Enterprise',customer:'Reliance Ltd',ctype:'New',costt:'',owner:'Ankit',notes:'Enterprise annual deal'},
-  {date:'2026-01-05',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Jan'},
-  {date:'2026-01-07',type:'Revenue',amount:28000,dept:'Sales',project:'SMB',customer:'Infosys SMB',ctype:'New',costt:'',owner:'Priya',notes:'Starter plan signup'},
-  {date:'2026-01-08',type:'Expense',amount:95000,dept:'HR',project:'Hiring',customer:'',ctype:'',costt:'Fixed',owner:'Kavya',notes:'Engineering salaries Jan'},
-  {date:'2026-01-10',type:'Expense',amount:8500,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Google Ads Jan'},
-  {date:'2026-01-12',type:'Revenue',amount:45000,dept:'Sales',project:'Enterprise',customer:'Tata Digital',ctype:'New',costt:'',owner:'Ankit',notes:'Mid-market deal'},
-  {date:'2026-01-14',type:'Expense',amount:4200,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'AWS hosting Jan'},
-  {date:'2026-01-16',type:'Expense',amount:6000,dept:'Finance',project:'Compliance',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Legal retainer'},
-  {date:'2026-01-18',type:'Revenue',amount:18000,dept:'Sales',project:'SMB',customer:'Wipro SME',ctype:'Existing',costt:'',owner:'Priya',notes:'Renewal - Starter'},
-  {date:'2026-01-20',type:'Expense',amount:3500,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'LinkedIn Ads Jan'},
-  {date:'2026-01-22',type:'Revenue',amount:35000,dept:'Sales',project:'Enterprise',customer:'HCL Tech',ctype:'Existing',costt:'',owner:'Ankit',notes:'Upsell existing'},
-  {date:'2026-01-25',type:'Expense',amount:1800,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'SaaS subscriptions'},
-  {date:'2026-01-27',type:'Expense',amount:22000,dept:'Management',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Founder salaries'},
-  {date:'2026-01-29',type:'Revenue',amount:12000,dept:'Sales',project:'SMB',customer:'Mahindra SME',ctype:'New',costt:'',owner:'Ravi',notes:'SMB onboarding'},
-  {date:'2026-01-31',type:'Expense',amount:2800,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'Datadog monitoring'},
-  {date:'2026-02-02',type:'Revenue',amount:135000,dept:'Sales',project:'Enterprise',customer:'Adani Digital',ctype:'New',costt:'',owner:'Ankit',notes:'Enterprise Q1 deal'},
-  {date:'2026-02-03',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Feb'},
-  {date:'2026-02-05',type:'Expense',amount:98000,dept:'HR',project:'Hiring',customer:'',ctype:'',costt:'Fixed',owner:'Kavya',notes:'Full team salaries Feb'},
-  {date:'2026-02-07',type:'Revenue',amount:28000,dept:'Sales',project:'SMB',customer:'Bajaj Finserv',ctype:'New',costt:'',owner:'Priya',notes:'SMB deal Feb'},
-  {date:'2026-02-09',type:'Expense',amount:12000,dept:'Marketing',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Brand redesign agency'},
-  {date:'2026-02-10',type:'Revenue',amount:45000,dept:'Sales',project:'Enterprise',customer:'Reliance Ltd',ctype:'Existing',costt:'',owner:'Ankit',notes:'Upsell Reliance'},
-  {date:'2026-02-12',type:'Expense',amount:5500,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'AWS + Cloudflare Feb'},
-  {date:'2026-02-14',type:'Revenue',amount:22000,dept:'Sales',project:'SMB',customer:'Infosys SMB',ctype:'Existing',costt:'',owner:'Priya',notes:'Existing renewal'},
-  {date:'2026-02-16',type:'Expense',amount:6000,dept:'Finance',project:'Compliance',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Legal retainer Feb'},
-  {date:'2026-02-18',type:'Expense',amount:9000,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Facebook & Instagram ads'},
-  {date:'2026-02-20',type:'Revenue',amount:15000,dept:'Sales',project:'SMB',customer:'Meesho Seller',ctype:'New',costt:'',owner:'Ravi',notes:'New SMB'},
-  {date:'2026-02-22',type:'Expense',amount:1800,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'SaaS tools Feb'},
-  {date:'2026-02-24',type:'Expense',amount:25000,dept:'Management',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Founder salaries Feb'},
-  {date:'2026-02-26',type:'Revenue',amount:38000,dept:'Sales',project:'Enterprise',customer:'Tata Digital',ctype:'Existing',costt:'',owner:'Ankit',notes:'Tata expansion'},
-  {date:'2026-02-28',type:'Expense',amount:3200,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'New Relic APM'},
-  {date:'2026-03-01',type:'Revenue',amount:160000,dept:'Sales',project:'Enterprise',customer:'HDFC Digital',ctype:'New',costt:'',owner:'Ankit',notes:'Q1 close - large deal'},
-  {date:'2026-03-03',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Mar'},
-  {date:'2026-03-04',type:'Expense',amount:102000,dept:'HR',project:'Hiring',customer:'',ctype:'',costt:'Fixed',owner:'Kavya',notes:'Expanded team salaries'},
-  {date:'2026-03-05',type:'Revenue',amount:35000,dept:'Sales',project:'SMB',customer:'Nykaa',ctype:'New',costt:'',owner:'Priya',notes:'SMB enterprise'},
-  {date:'2026-03-07',type:'Expense',amount:15000,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Launch campaign Mar'},
-  {date:'2026-03-09',type:'Revenue',amount:45000,dept:'Sales',project:'Enterprise',customer:'Adani Digital',ctype:'Existing',costt:'',owner:'Ankit',notes:'Adani expansion'},
-  {date:'2026-03-10',type:'Expense',amount:7200,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'Infrastructure scale-up'},
-  {date:'2026-03-12',type:'Revenue',amount:25000,dept:'Sales',project:'SMB',customer:'Wipro SME',ctype:'Existing',costt:'',owner:'Priya',notes:'Wipro upsell'},
-  {date:'2026-03-14',type:'Expense',amount:6000,dept:'Finance',project:'Compliance',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Legal retainer Mar'},
-  {date:'2026-03-15',type:'Expense',amount:18000,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Influencer partnerships'},
-  {date:'2026-03-17',type:'Revenue',amount:30000,dept:'Sales',project:'SMB',customer:'Bajaj Finserv',ctype:'Existing',costt:'',owner:'Ravi',notes:'Bajaj renewal Mar'},
-  {date:'2026-03-18',type:'Expense',amount:1800,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Tools Mar'},
-  {date:'2026-03-20',type:'Revenue',amount:55000,dept:'Sales',project:'Enterprise',customer:'Meesho Corp',ctype:'New',costt:'',owner:'Ankit',notes:'Meesho enterprise sign'},
-  {date:'2026-03-22',type:'Expense',amount:28000,dept:'Management',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Salaries + bonus'},
-  {date:'2026-03-24',type:'Expense',amount:8000,dept:'Tech',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'Dev tooling upgrade'},
-  {date:'2026-03-26',type:'Revenue',amount:18000,dept:'Sales',project:'SMB',customer:'HDFC SME',ctype:'New',costt:'',owner:'Priya',notes:'New SMB sign'},
-  {date:'2026-03-28',type:'Expense',amount:5500,dept:'Marketing',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'New website design'},
-  {date:'2026-03-30',type:'Expense',amount:4000,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'End of month infra'},
+  {date:'2026-01-03',type:'Revenue',amount:120000,dept:'Sales',project:'Enterprise',customer:'Reliance Ltd',ctype:'New',costt:'',owner:'Ankit',notes:'Enterprise annual deal', business_unit:'India', invoice_number:'INV-2026-001', invoice_url:''},
+  {date:'2026-01-05',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Jan', business_unit:'India', invoice_number:'INV-2026-002', invoice_url:''},
+  {date:'2026-01-07',type:'Revenue',amount:28000,dept:'Sales',project:'SMB',customer:'Infosys SMB',ctype:'New',costt:'',owner:'Priya',notes:'Starter plan signup', business_unit:'India', invoice_number:'INV-2026-003', invoice_url:''},
+  {date:'2026-01-08',type:'Expense',amount:95000,dept:'HR',project:'Hiring',customer:'',ctype:'',costt:'Fixed',owner:'Kavya',notes:'Engineering salaries Jan', business_unit:'India', invoice_number:'INV-2026-004', invoice_url:''},
+  {date:'2026-01-10',type:'Expense',amount:8500,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Google Ads Jan', business_unit:'India', invoice_number:'INV-2026-005', invoice_url:''},
+  {date:'2026-01-12',type:'Revenue',amount:45000,dept:'Sales',project:'Enterprise',customer:'Tata Digital',ctype:'New',costt:'',owner:'Ankit',notes:'Mid-market deal', business_unit:'India', invoice_number:'INV-2026-006', invoice_url:''},
+  {date:'2026-01-14',type:'Expense',amount:4200,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'AWS hosting Jan', business_unit:'India', invoice_number:'INV-2026-007', invoice_url:''},
+  {date:'2026-01-16',type:'Expense',amount:6000,dept:'Finance',project:'Compliance',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Legal retainer', business_unit:'India', invoice_number:'INV-2026-008', invoice_url:''},
+  {date:'2026-01-18',type:'Revenue',amount:18000,dept:'Sales',project:'SMB',customer:'Wipro SME',ctype:'Existing',costt:'',owner:'Priya',notes:'Renewal - Starter', business_unit:'India', invoice_number:'INV-2026-009', invoice_url:''},
+  {date:'2026-01-20',type:'Expense',amount:3500,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'LinkedIn Ads Jan', business_unit:'India', invoice_number:'INV-2026-010', invoice_url:''},
+  {date:'2026-01-22',type:'Revenue',amount:35000,dept:'Sales',project:'Enterprise',customer:'HCL Tech',ctype:'Existing',costt:'',owner:'Ankit',notes:'Upsell existing', business_unit:'India', invoice_number:'INV-2026-011', invoice_url:''},
+  {date:'2026-01-25',type:'Expense',amount:1800,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'SaaS subscriptions', business_unit:'India', invoice_number:'INV-2026-012', invoice_url:''},
+  {date:'2026-01-27',type:'Expense',amount:22000,dept:'Management',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Founder salaries', business_unit:'India', invoice_number:'INV-2026-013', invoice_url:''},
+  {date:'2026-01-29',type:'Revenue',amount:12000,dept:'Sales',project:'SMB',customer:'Mahindra SME',ctype:'New',costt:'',owner:'Ravi',notes:'SMB onboarding', business_unit:'India', invoice_number:'INV-2026-014', invoice_url:''},
+  {date:'2026-01-31',type:'Expense',amount:2800,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'Datadog monitoring', business_unit:'India', invoice_number:'INV-2026-015', invoice_url:''},
+  {date:'2026-02-02',type:'Revenue',amount:135000,dept:'Sales',project:'Enterprise',customer:'Adani Digital',ctype:'New',costt:'',owner:'Ankit',notes:'Enterprise Q1 deal', business_unit:'India', invoice_number:'INV-2026-016', invoice_url:''},
+  {date:'2026-02-03',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Feb', business_unit:'India', invoice_number:'INV-2026-017', invoice_url:''},
+  {date:'2026-02-05',type:'Expense',amount:98000,dept:'HR',project:'Hiring',customer:'',ctype:'',costt:'Fixed',owner:'Kavya',notes:'Full team salaries Feb', business_unit:'India', invoice_number:'INV-2026-018', invoice_url:''},
+  {date:'2026-02-07',type:'Revenue',amount:28000,dept:'Sales',project:'SMB',customer:'Bajaj Finserv',ctype:'New',costt:'',owner:'Priya',notes:'SMB deal Feb', business_unit:'India', invoice_number:'INV-2026-019', invoice_url:''},
+  {date:'2026-02-09',type:'Expense',amount:12000,dept:'Marketing',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Brand redesign agency', business_unit:'India', invoice_number:'INV-2026-020', invoice_url:''},
+  {date:'2026-02-10',type:'Revenue',amount:45000,dept:'Sales',project:'Enterprise',customer:'Reliance Ltd',ctype:'Existing',costt:'',owner:'Ankit',notes:'Upsell Reliance', business_unit:'India', invoice_number:'INV-2026-021', invoice_url:''},
+  {date:'2026-02-12',type:'Expense',amount:5500,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'AWS + Cloudflare Feb', business_unit:'India', invoice_number:'INV-2026-022', invoice_url:''},
+  {date:'2026-02-14',type:'Revenue',amount:22000,dept:'Sales',project:'SMB',customer:'Infosys SMB',ctype:'Existing',costt:'',owner:'Priya',notes:'Existing renewal', business_unit:'India', invoice_number:'INV-2026-023', invoice_url:''},
+  {date:'2026-02-16',type:'Expense',amount:6000,dept:'Finance',project:'Compliance',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Legal retainer Feb', business_unit:'India', invoice_number:'INV-2026-024', invoice_url:''},
+  {date:'2026-02-18',type:'Expense',amount:9000,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Facebook & Instagram ads', business_unit:'India', invoice_number:'INV-2026-025', invoice_url:''},
+  {date:'2026-02-20',type:'Revenue',amount:15000,dept:'Sales',project:'SMB',customer:'Meesho Seller',ctype:'New',costt:'',owner:'Ravi',notes:'New SMB', business_unit:'India', invoice_number:'INV-2026-026', invoice_url:''},
+  {date:'2026-02-22',type:'Expense',amount:1800,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'SaaS tools Feb', business_unit:'India', invoice_number:'INV-2026-027', invoice_url:''},
+  {date:'2026-02-24',type:'Expense',amount:25000,dept:'Management',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Founder salaries Feb', business_unit:'India', invoice_number:'INV-2026-028', invoice_url:''},
+  {date:'2026-02-26',type:'Revenue',amount:38000,dept:'Sales',project:'Enterprise',customer:'Tata Digital',ctype:'Existing',costt:'',owner:'Ankit',notes:'Tata expansion', business_unit:'India', invoice_number:'INV-2026-029', invoice_url:''},
+  {date:'2026-02-28',type:'Expense',amount:3200,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'New Relic APM', business_unit:'India', invoice_number:'INV-2026-030', invoice_url:''},
+  {date:'2026-03-01',type:'Revenue',amount:160000,dept:'Sales',project:'Enterprise',customer:'HDFC Digital',ctype:'New',costt:'',owner:'Ankit',notes:'Q1 close - large deal', business_unit:'India', invoice_number:'INV-2026-031', invoice_url:''},
+  {date:'2026-03-03',type:'Expense',amount:18000,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Office rent Mar', business_unit:'India', invoice_number:'INV-2026-032', invoice_url:''},
+  {date:'2026-03-04',type:'Expense',amount:102000,dept:'HR',project:'Hiring',customer:'',ctype:'',costt:'Fixed',owner:'Kavya',notes:'Expanded team salaries', business_unit:'India', invoice_number:'INV-2026-033', invoice_url:''},
+  {date:'2026-03-05',type:'Revenue',amount:35000,dept:'Sales',project:'SMB',customer:'Nykaa',ctype:'New',costt:'',owner:'Priya',notes:'SMB enterprise', business_unit:'India', invoice_number:'INV-2026-034', invoice_url:''},
+  {date:'2026-03-07',type:'Expense',amount:15000,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Launch campaign Mar', business_unit:'India', invoice_number:'INV-2026-035', invoice_url:''},
+  {date:'2026-03-09',type:'Revenue',amount:45000,dept:'Sales',project:'Enterprise',customer:'Adani Digital',ctype:'Existing',costt:'',owner:'Ankit',notes:'Adani expansion', business_unit:'India', invoice_number:'INV-2026-036', invoice_url:''},
+  {date:'2026-03-10',type:'Expense',amount:7200,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'Infrastructure scale-up', business_unit:'India', invoice_number:'INV-2026-037', invoice_url:''},
+  {date:'2026-03-12',type:'Revenue',amount:25000,dept:'Sales',project:'SMB',customer:'Wipro SME',ctype:'Existing',costt:'',owner:'Priya',notes:'Wipro upsell', business_unit:'India', invoice_number:'INV-2026-038', invoice_url:''},
+  {date:'2026-03-14',type:'Expense',amount:6000,dept:'Finance',project:'Compliance',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Legal retainer Mar', business_unit:'India', invoice_number:'INV-2026-039', invoice_url:''},
+  {date:'2026-03-15',type:'Expense',amount:18000,dept:'Marketing',project:'Product Launch',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'Influencer partnerships', business_unit:'India', invoice_number:'INV-2026-040', invoice_url:''},
+  {date:'2026-03-17',type:'Revenue',amount:30000,dept:'Sales',project:'SMB',customer:'Bajaj Finserv',ctype:'Existing',costt:'',owner:'Ravi',notes:'Bajaj renewal Mar', business_unit:'India', invoice_number:'INV-2026-041', invoice_url:''},
+  {date:'2026-03-18',type:'Expense',amount:1800,dept:'Ops',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'Admin',notes:'Tools Mar', business_unit:'India', invoice_number:'INV-2026-042', invoice_url:''},
+  {date:'2026-03-20',type:'Revenue',amount:55000,dept:'Sales',project:'Enterprise',customer:'Meesho Corp',ctype:'New',costt:'',owner:'Ankit',notes:'Meesho enterprise sign', business_unit:'India', invoice_number:'INV-2026-043', invoice_url:''},
+  {date:'2026-03-22',type:'Expense',amount:28000,dept:'Management',project:'General',customer:'',ctype:'',costt:'Fixed',owner:'CEO',notes:'Salaries + bonus', business_unit:'India', invoice_number:'INV-2026-044', invoice_url:''},
+  {date:'2026-03-24',type:'Expense',amount:8000,dept:'Tech',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'Dev tooling upgrade', business_unit:'India', invoice_number:'INV-2026-045', invoice_url:''},
+  {date:'2026-03-26',type:'Revenue',amount:18000,dept:'Sales',project:'SMB',customer:'HDFC SME',ctype:'New',costt:'',owner:'Priya',notes:'New SMB sign', business_unit:'India', invoice_number:'INV-2026-046', invoice_url:''},
+  {date:'2026-03-28',type:'Expense',amount:5500,dept:'Marketing',project:'Rebrand',customer:'',ctype:'',costt:'Variable',owner:'Priya',notes:'New website design', business_unit:'India', invoice_number:'INV-2026-047', invoice_url:''},
+  {date:'2026-03-30',type:'Expense',amount:4000,dept:'Tech',project:'Platform',customer:'',ctype:'',costt:'Variable',owner:'Ravi',notes:'End of month infra', business_unit:'India', invoice_number:'INV-2026-048', invoice_url:''},
 ];
 
 const FALLBACK_DATA: FinanceTransaction[] = INITIAL_DATA.map((row, index) => ({
@@ -161,7 +161,6 @@ export default function Index() {
   const [data, setData] = useState<FinanceTransaction[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [syncError, setSyncError] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isChangePwOpen, setIsChangePwOpen] = useState(false);
 
   const C = useMemo(() => runCalc(data), [data]);
@@ -276,6 +275,9 @@ export default function Index() {
       costt,
       owner,
       notes,
+      business_unit: 'India',
+      invoice_number: '',
+      invoice_url: '',
     })
       .then(() => {
         setAmount('');
@@ -283,7 +285,6 @@ export default function Index() {
         setCustomer('');
         setOwner('');
         setNotes('');
-        setIsModalOpen(false);
       })
       .catch((error) => {
         setFormErr(error instanceof Error ? error.message : 'Failed to add transaction');
@@ -367,7 +368,7 @@ export default function Index() {
           <div className="topbar-right">
             <span className={`status-badge ${status}`}>{statusText}</span>
             <span style={{fontSize:'11px',color:'var(--muted)'}}>{new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span>
-            <button className="btn-ui btn-primary" onClick={()=>setIsModalOpen(true)}>+ Add Transaction</button>
+            <button className="btn-ui btn-primary" onClick={()=>navigate('/log')}>+ Add Transaction</button>
           </div>
         </div>
         <div className="content">
@@ -389,30 +390,7 @@ export default function Index() {
         />
       )}
 
-      {isModalOpen && (
-        <div className="modal-overlay" onMouseDown={(e)=>e.target===e.currentTarget && setIsModalOpen(false)}>
-          <div className="modal">
-            <div className="modal-title">+ Add Transaction</div>
-            <div className="modal-form">
-              <div className="form-group"><label>Date</label><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></div>
-              <div className="form-group"><label>Type</label><select value={type} onChange={e=>setType(e.target.value)}><option>Revenue</option><option>Expense</option></select></div>
-              <div className="form-group"><label>Amount (₹)</label><input type="number" placeholder="0" min="0" value={amount} onChange={e=>setAmount(e.target.value)}/></div>
-              <div className="form-group"><label>Department</label><select value={dept} onChange={e=>setDept(e.target.value)}><option value="">— Select —</option><option>Marketing</option><option>Sales</option><option>Finance</option><option>HR</option><option>Tech</option><option>Ops</option><option>Management</option></select></div>
-              <div className="form-group"><label>Project</label><input type="text" placeholder="Project name" value={project} onChange={e=>setProject(e.target.value)}/></div>
-              <div className="form-group"><label>Customer</label><input type="text" placeholder="Customer name" value={customer} onChange={e=>setCustomer(e.target.value)}/></div>
-              <div className="form-group"><label>Customer Type</label><select value={ctype} onChange={e=>setCtype(e.target.value)}><option value="">—</option><option>New</option><option>Existing</option></select></div>
-              <div className="form-group"><label>Cost Type</label><select value={costt} onChange={e=>setCostt(e.target.value)}><option value="">—</option><option>Fixed</option><option>Variable</option></select></div>
-              <div className="form-group"><label>Owner</label><input type="text" placeholder="Owner" value={owner} onChange={e=>setOwner(e.target.value)}/></div>
-              <div className="form-group" style={{gridColumn:'1/-1'}}><label>Notes</label><input type="text" placeholder="Notes or description" value={notes} onChange={e=>setNotes(e.target.value)}/></div>
-            </div>
-            <div style={{display:'flex',gap:'10px',marginTop:'16px',justifyContent:'flex-end'}}>
-              <button className="btn-ui btn-outline" onClick={()=>setIsModalOpen(false)}>Cancel</button>
-              <button className="btn-ui btn-primary" onClick={handleAdd}>Add Transaction</button>
-            </div>
-            {formErr && <div style={{color:'var(--red)',fontSize:'11px',marginTop:'8px'}}>{formErr}</div>}
-          </div>
-        </div>
-      )}
+      {/* Modal is removed in favor of redirection to Daily Log */}
     </div>
   );
 }
@@ -515,7 +493,7 @@ function LogTab({
   isLoadingData,
   syncError,
 }: any) {
-  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], type: 'Revenue', amount: '', dept: '', project: '', customer: '', ctype: '', costt: '', owner: '', notes: '' });
+  const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], type: 'Revenue', amount: '', dept: '', project: '', customer: '', ctype: '', costt: '', owner: '', notes: '', business_unit: 'India', invoice_number: '', invoice_url: '' });
 
   let rows = [...data].sort((a,b)=>b.date.localeCompare(a.date));
   if (search) rows = rows.filter(r=>[r.date,r.type,r.dept,r.project,r.customer,r.owner,r.notes].join(' ').toLowerCase().includes(search.toLowerCase()));
@@ -541,7 +519,7 @@ function LogTab({
   const handleAdd = async () => {
     if (!form.amount || isNaN(Number(form.amount))) return alert("Valid amount required");
     try {
-      await onCreate({ ...form, amount: Number(form.amount), type: form.type as 'Revenue' | 'Expense' });
+      await onCreate({ ...form, amount: Number(form.amount), type: form.type as 'Revenue' | 'Expense', business_unit: form.business_unit || 'India', invoice_number: form.invoice_number || '', invoice_url: form.invoice_url || '' });
       setForm(f => ({ ...f, amount: '', notes: '', project: '', customer: '' }));
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to add transaction');

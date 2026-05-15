@@ -9,6 +9,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Login from "./pages/Login";
 import Index from "./pages/Index";
+import DailyLog from "./pages/DailyLog";
+import FinancialAnalysis from "./pages/FinancialAnalysis";
+import Projects from "./pages/Projects";
+import Departments from "./pages/Departments";
+import Forecast from "./pages/Forecast";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,11 +28,11 @@ const App = () => (
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/" element={<Index />} />
-            <Route path="/log" element={<Index />} />
-            <Route path="/analysis" element={<Index />} />
-            <Route path="/projects" element={<Index />} />
-            <Route path="/departments" element={<Index />} />
-            <Route path="/forecast" element={<Index />} />
+            <Route path="/log" element={<DailyLog />} />
+            <Route path="/analysis" element={<FinancialAnalysis />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/departments" element={<Departments />} />
+            <Route path="/forecast" element={<Forecast />} />
             <Route path="/insights" element={<Index />} />
             <Route path="/cashflow" element={<Index />} />
             <Route path="*" element={<NotFound />} />

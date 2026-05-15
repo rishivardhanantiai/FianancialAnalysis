@@ -8,6 +8,12 @@ import {
   listTransactions,
 } from "./routes/transactions";
 
+import {
+  handleUploadInvoice,
+  handleBulkDownloadInvoices,
+  uploadMiddleware,
+} from "./routes/invoices";
+
 export function createServer() {
   const app = express();
 
@@ -27,6 +33,10 @@ export function createServer() {
   app.post(["/api/transactions", "/transactions"], createTransaction);
   app.delete(["/api/transactions", "/transactions"], deleteTransaction);
   app.delete(["/api/transactions/:id", "/transactions/:id"], deleteTransaction);
+
+  // Invoice routes
+  app.post("/api/invoices/upload", uploadMiddleware, handleUploadInvoice);
+  app.get("/api/invoices/download", handleBulkDownloadInvoices);
 
   return app;
 }
