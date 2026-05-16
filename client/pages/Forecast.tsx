@@ -99,6 +99,18 @@ export default function Forecast() {
     [transactions, revAlphas, expAlphas]
   );
 
+  // Compute cumulative actual net cash (Revenue - Expense) for actual months
+  const cumulativeActualNet = useMemo(() => {
+    return actualMonths.reduce((sum, m) => {
+      const rev = revTotals[m] ?? 0;
+      const exp = expTotals[m] ?? 0;
+      return sum + (rev - exp);
+    }, 0);
+  }, [actualMonths, revTotals, expTotals]);
+
+  const firstForecastLabel = forecast.months[0]?.label || formatMonthLabel(addMonths(currentMonth, 1));
+  const forecastStartCash = openingCash + cumulativeActualNet;
+
   // Unified chart: actuals + forecast
   const chartData = useMemo(() => {
     const actual = actualMonths.map((m) => ({
@@ -118,18 +130,9 @@ export default function Forecast() {
 
   // Cash flow rows
   const cfRows = useMemo(() => {
-    // Add opening cash only once: prior to the first forecast month that
-    // follows the last actual month. If there are no actual months, apply
-    // opening cash before the first forecast month.
-    const lastActualMonth = actualMonths.length > 0 ? actualMonths[actualMonths.length - 1] : null;
     let cash = 0;
     return forecast.months.map((f, idx) => {
-      // apply opening cash only once at the beginning of the forecast window
-      if (idx === 0) {
-        if (!lastActualMonth || f.month > lastActualMonth) {
-          cash += openingCash;
-        }
-      }
+      if (idx === 0) cash = forecastStartCash;
       const openCash = cash;
       const closeCash = cash + f.netCF;
       cash = closeCash;
@@ -139,7 +142,7 @@ export default function Forecast() {
           : "∞ Positive";
       return { ...f, openCash, closeCash, runway };
     });
-  }, [forecast, openingCash]);
+  }, [forecast, forecastStartCash]);
 
   const lastCF   = cfRows[cfRows.length - 1];
   const splitLabel = actualMonths.length > 0
@@ -166,26 +169,37 @@ export default function Forecast() {
       </div>
 
       {/* Opening Cash */}
-      <div className="box mb-16" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "16px" }}>
-        <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--navy)", textTransform: "uppercase" }}>
-          Opening Cash (₹)
-        </label>
-        <input
-          type="number"
-          value={openingCash}
-          onChange={(e) => setOpeningCash(parseFloat(e.target.value) || 0)}
-          style={{
-            padding: "8px 12px",
-            border: "1.5px solid var(--f-border)",
-            borderRadius: "8px",
-            fontSize: "12px",
-            fontWeight: 700,
-            color: "var(--navy)",
-            background: "var(--background)",
-            width: "160px",
-          }}
-        />
-        <span style={{ fontSize: "11px", color: "var(--muted)" }}>Starting cash balance for runway calculation</span>
+      <div className="box mb-16" style={{ padding: "16px", display: "flex", alignItems: "center", gap: "16px", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <label style={{ fontSize: "11px", fontWeight: 700, color: "var(--navy)", textTransform: "uppercase" }}>
+            Opening Cash (₹)
+          </label>
+          <input
+            type="number"
+            value={openingCash}
+            onChange={(e) => setOpeningCash(parseFloat(e.target.value) || 0)}
+            style={{
+              padding: "8px 12px",
+              border: "1.5px solid var(--f-border)",
+              borderRadius: "8px",
+              fontSize: "12px",
+              fontWeight: 700,
+              color: "var(--navy)",
+              background: "var(--background)",
+              width: "160px",
+            }}
+          />
+          <span style={{ fontSize: "11px", color: "var(--muted)" }}>
+            (Edit manually — computed as Opening Cash + sum(Revenue − Expense) over actual months)
+          </span>
+        </div>
+
+        <div style={{ minWidth: 260, textAlign: "right" }}>
+          <div style={{ fontSize: "11px", color: "var(--muted)", marginBottom: 6 }}>Calculated start for {firstForecastLabel}</div>
+          <div style={{ display: "inline-block", padding: "8px 12px", borderRadius: 8, background: "var(--background)", border: "1px solid var(--f-border)", fontWeight: 800, color: "var(--navy)" }}>
+            {formatCurrency(forecastStartCash)}
+          </div>
+        </div>
       </div>
 
       {/* Seed Actuals Used */}

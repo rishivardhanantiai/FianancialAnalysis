@@ -153,10 +153,10 @@ export default function FinancialAnalysis() {
       {/* Period Filter */}
       <PeriodFilter value={period} onChange={setPeriod} transactions={transactions} showAllOption />
 
-      {/* ── Actual vs Forecast vs Target ─────────────────────────── */}
+      {/* ── Actual vs Target Summary ─────────────────────────── */}
       <div className="box mb-16">
         <div className="box-title">
-          <span>Actual vs Forecast vs Target</span>
+          <span>Actual vs Target</span>
           <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--muted)" }}>
             Click any Target cell to edit
           </span>
@@ -167,21 +167,18 @@ export default function FinancialAnalysis() {
               <tr>
                 <th>Metric</th>
                 <th>Actual</th>
-                <th>Forecast (next mo.)</th>
                 <th>Target</th>
                 <th>Variance (Act−Tgt)</th>
-                <th>Forecast Gap (Fcst−Tgt)</th>
                 <th style={{ textAlign: "center" }}>Signal</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { label: "Revenue",  actual: totalRev,    fcst: forecastRev,    tgt: targetRev,    type: "rev"  },
-                { label: "Expenses", actual: totalExp,    fcst: forecastExp,    tgt: targetExp,    type: "exp"  },
-                { label: "Profit",   actual: totalProfit, fcst: forecastProfit, tgt: targetProfit, type: "profit" },
+                { label: "Revenue",  actual: totalRev,    tgt: targetRev,    type: "rev"  },
+                { label: "Expenses", actual: totalExp,    tgt: targetExp,    type: "exp"  },
+                { label: "Profit",   actual: totalProfit, tgt: targetProfit, type: "profit" },
               ].map((row) => {
                 const variance    = row.actual - row.tgt;
-                const fcstGap     = row.fcst - row.tgt;
                 const signal      = getSignal(row.actual, row.tgt);
                 
                 let actualColor = "var(--text)";
@@ -193,17 +190,12 @@ export default function FinancialAnalysis() {
                 if (row.type === "rev" || row.type === "profit") varColor = variance >= 0 ? "var(--green)" : "var(--red)";
                 else if (row.type === "exp") varColor = variance <= 0 ? "var(--green)" : "var(--red)"; // Lower expense is good
 
-                let gapColor = "var(--text)";
-                if (row.type === "rev" || row.type === "profit") gapColor = fcstGap >= 0 ? "var(--green)" : "var(--red)";
-                else if (row.type === "exp") gapColor = fcstGap <= 0 ? "var(--green)" : "var(--red)";
-
                 return (
                   <tr key={row.label}>
                     <td className="fw-bold">{row.label}</td>
                     <td className="fw-bold" style={{ color: actualColor }}>
                       {formatCurrency(row.actual)}
                     </td>
-                    <td className="fw-bold" style={{ color: "var(--navy)" }}>{formatCurrency(row.fcst)}</td>
                     <td>
                       {row.label !== "Profit" ? (
                         <EditableTargetCell
@@ -216,9 +208,6 @@ export default function FinancialAnalysis() {
                     </td>
                     <td className="fw-bold" style={{ color: varColor }}>
                       {variance >= 0 ? "+" : ""}{formatCurrency(variance)}
-                    </td>
-                    <td className="fw-bold" style={{ color: gapColor }}>
-                      {fcstGap >= 0 ? "+" : ""}{formatCurrency(fcstGap)}
                     </td>
                     <td style={{ textAlign: "center" }}>
                       <span className={`tag ${signal}`}>
@@ -273,6 +262,64 @@ export default function FinancialAnalysis() {
               </ResponsiveContainer>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* ── Forecast vs Target (Upcoming Months) ─────────────────────────── */}
+      <div className="box mb-16">
+        <div className="box-title">
+          <span>Forecast vs Target (Upcoming Months)</span>
+          <span style={{ fontSize: "10px", fontWeight: 500, color: "var(--muted)" }}>
+            Only upcoming months are shown (targets for prior months are ignored)
+          </span>
+        </div>
+        <div style={{ padding: "16px", display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px", alignItems: "start" }}>
+          {forecast.months.length === 0 ? (
+            <div className="empty">No forecast available</div>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={forecast.months.map((f) => ({
+                  month: f.label,
+                  Forecast: f.revenue,
+                  Target: getTarget(f.month).revenue || 0,
+                }))} margin={{ top: 8, right: 12, left: 0, bottom: 6 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2eaf3" />
+                  <XAxis dataKey="month" stroke="#5a718a" style={{ fontSize: 11 }} />
+                  <YAxis stroke="#5a718a" style={{ fontSize: 11 }} tickFormatter={formatCurrency} />
+                  <Tooltip formatter={(v) => formatCurrency(v as number)} contentStyle={{ background: "#fff", border: "1px solid #e2eaf3" }} />
+                  <Legend />
+                  <Bar dataKey="Forecast" fill="#2E7D32" radius={4} />
+                  <Bar dataKey="Target" fill="#1F3A5F" radius={4} />
+                </BarChart>
+              </ResponsiveContainer>
+
+              <div className="box" style={{ marginBottom: 0 }}>
+                <div className="box-title" style={{ marginBottom: "8px" }}>Set Upcoming Targets</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "8px 12px 12px" }}>
+                  {forecast.months.map((f) => (
+                    <div key={f.month} style={{ display: "grid", gridTemplateColumns: "1fr 110px", gap: "8px", alignItems: "center" }}>
+                      <span style={{ fontSize: "12px", color: "var(--navy)", fontWeight: 600 }}>{f.label}</span>
+                      <input
+                        type="number"
+                        value={getTarget(f.month).revenue || 0}
+                        onChange={(e) => setTarget(f.month, { revenue: parseFloat(e.target.value) || 0 })}
+                        style={{
+                          border: "1.5px solid var(--f-border)",
+                          borderRadius: "8px",
+                          padding: "6px 8px",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "var(--navy)",
+                          background: "var(--background)",
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

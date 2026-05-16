@@ -314,12 +314,12 @@ export default function DailyLog() {
               )}
             </div>
             <div className="form-group">
-              <label>Customer</label>
+              <label>{formData.type === "Revenue" ? "Customer" : "Vendor"}</label>
               <input
                 type="text"
                 value={formData.customer}
                 onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
-                placeholder="Customer"
+                placeholder={formData.type === "Revenue" ? "Customer" : "Vendor"}
               />
             </div>
             <div className="form-group">
@@ -475,8 +475,8 @@ export default function DailyLog() {
                 <th>Type</th>
                 <th>Inv #</th>
                 <th>Amount</th>
-                <th>Dept / Project</th>
-                <th>Customer / Owner</th>
+                <th>Department & Project</th>
+                <th>Customer or Vendor & Owner</th>
                 <th>Notes</th>
                 <th>Invoice</th>
                 <th>Action</th>
