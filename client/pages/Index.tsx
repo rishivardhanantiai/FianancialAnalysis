@@ -568,12 +568,15 @@ function AnalysisTab({ data, C }: any) {
 
   return (
     <>
-      <div className="page-title">Financial Analysis</div><div className="page-sub">Auto-aggregated from Daily Log · Month-by-month performance</div>
-      <div className="grid-2">
+      <div style={{ marginBottom: "16px" }}>
+        <div className="page-title">Financial Analysis</div>
+        <div className="page-sub">Auto-aggregated from Daily Log · Month-by-month performance</div>
+      </div>
+      <div className="grid-2" style={{ marginBottom: "24px" }}>
         <div className="box"><div className="box-title">Monthly Revenue & Expense Trend</div><div className="chart-wrap"><canvas ref={tRef}></canvas></div></div>
         <div className="box"><div className="box-title">Profit Trend</div><div className="chart-wrap"><canvas ref={pRef}></canvas></div></div>
       </div>
-      <div className="box mb-16">
+      <div className="box mb-8">
         <div className="box-title">Monthly Performance Table</div>
         <table className="tbl">
           <thead><tr><th>Month</th><th>Revenue</th><th>Expenses</th><th>Net Profit</th><th>Margin</th><th>Fixed Cost</th><th>Variable Cost</th><th>Status</th></tr></thead>
@@ -592,7 +595,7 @@ function AnalysisTab({ data, C }: any) {
           </tbody>
         </table>
       </div>
-      <div className="grid-2">
+      <div className="grid-2" style={{ marginBottom: "16px" }}>
         <div className="box">
           <div className="box-title">Top Customers by Revenue</div>
           <table className="tbl">
@@ -659,7 +662,7 @@ function ProjectsTab({ data, C }: any) {
   return (
     <>
       <div className="page-title">Project Tracker</div><div className="page-sub">Auto P&L per project from Daily Log</div>
-      <div className="box">
+      <div className="box mb-8">
         <div className="box-title">Project P&L Summary</div>
         <table className="tbl">
           <thead><tr><th>Project</th><th>Revenue</th><th>Expenses</th><th>Gross Profit</th><th>Margin %</th><th>Transactions</th><th>Status</th></tr></thead>
@@ -676,7 +679,7 @@ function ProjectsTab({ data, C }: any) {
           </tbody>
         </table>
       </div>
-      <div className="chart-wrap" style={{height:'200px',marginTop:'16px'}}><canvas ref={pRef}></canvas></div>
+      <div className="chart-wrap" style={{height:'200px',marginTop:'8px'}}><canvas ref={pRef}></canvas></div>
     </>
   );
 }
@@ -714,7 +717,7 @@ function DepartmentsTab({ data, C }: any) {
         <div className="kpi green"><div className="kpi-label">On Track</div><div className="kpi-value">{ok}</div><div className="kpi-sub">Under 80% utilized</div></div>
         <div className="kpi"><div className="kpi-label">Total Dept Spend</div><div className="kpi-value">{fmtK(Object.values(C.deptSpend).reduce((s: any,v: any)=>s+v,0) as number)}</div><div className="kpi-sub">All departments</div></div>
       </div>
-      <div className="box">
+      <div className="box mb-8">
         <div className="box-title">Department Budget vs Actual</div>
         <table className="tbl">
           <thead><tr><th>Department</th><th>Alloc %</th><th>Budget</th><th>Actual Spend</th><th>Variance</th><th>Utilized %</th><th>Status</th></tr></thead>
@@ -730,7 +733,7 @@ function DepartmentsTab({ data, C }: any) {
           </tbody>
         </table>
       </div>
-      <div className="box mt-8"><div className="box-title">Spend Distribution</div><div className="chart-wrap" style={{height:'200px'}}><canvas ref={dRef}></canvas></div></div>
+      <div className="box"><div className="box-title">Spend Distribution</div><div className="chart-wrap" style={{height:'200px'}}><canvas ref={dRef}></canvas></div></div>
     </>
   );
 }
@@ -794,16 +797,19 @@ function ForecastTab({ data, C }: any) {
 
   return (
     <>
-      <div className="page-title">3-Month Revenue Projection</div><div className="page-sub">Base auto-pulled from Daily Log · Only assumptions are editable below</div>
-      <div className="sec-bar"><span>⚙ ASSUMPTION INPUTS — Edit only these cells</span><span style={{fontSize:'10px',opacity:0.7}}>All projections update instantly</span></div>
-      <div className="assume-grid">
+      <div style={{ marginBottom: "16px" }}>
+        <div className="page-title">3-Month Revenue Projection</div>
+        <div className="page-sub">Base auto-pulled from Daily Log · Only assumptions are editable below</div>
+      </div>
+      <div className="sec-bar" style={{ marginBottom: "16px" }}><span>⚙ ASSUMPTION INPUTS — Edit only these cells</span><span style={{fontSize:'10px',opacity:0.7}}>All projections update instantly</span></div>
+      <div className="assume-grid" style={{ marginBottom: "24px" }}>
         <div className="assume-item"><label>Revenue Growth %</label><input type="number" value={revGrowth} onChange={e=>setRevGrowth(parseFloat(e.target.value)||0)}/>%</div>
         <div className="assume-item"><label>Expansion Rate %</label><input type="number" value={expansion} onChange={e=>setExpansion(parseFloat(e.target.value)||0)}/>%</div>
         <div className="assume-item"><label>Churn Rate %</label><input type="number" value={churn} onChange={e=>setChurn(parseFloat(e.target.value)||0)}/>%</div>
         <div className="assume-item"><label>Expense Growth %</label><input type="number" value={expGrowth} onChange={e=>setExpGrowth(parseFloat(e.target.value)||0)}/>%</div>
         <div className="assume-item"><label>Opening Cash (₹)</label><input type="number" value={openCash} step="10000" onChange={e=>setOpenCash(parseFloat(e.target.value)||0)}/></div>
       </div>
-      <div className="grid-2">
+      <div className="grid-2" style={{ marginBottom: "16px" }}>
         <div className="box">
           <div className="box-title">Revenue Waterfall (Bottom-Up)</div>
           <table className="fcst-table">
@@ -824,7 +830,7 @@ function ForecastTab({ data, C }: any) {
         </div>
       </div>
       <div className="box"><div className="box-title">Projection Chart — Revenue · Expenses · Cash</div><div className="chart-wrap" style={{height:'240px'}}><canvas ref={fRef}></canvas></div></div>
-      <div style={{marginTop:'12px'}}>
+      <div style={{marginTop:'8px'}}>
         {forecasts.flags.map((f: any, i: number)=><div key={i} className={`alert ${f.type}`}>{f.msg}</div>)}
       </div>
     </>
@@ -898,11 +904,14 @@ function InsightsTab({ data, C }: any) {
 
   return (
     <>
-      <div className="page-title">AI Insights Engine</div><div className="page-sub">Auto-generated from Daily Log rules engine · Updates with every transaction</div>
-      {critical.length > 0 && <><div className="sec-bar" style={{background:'var(--red)',marginBottom:'10px'}}>🚨 Critical Issues</div><div className="mb-16" style={{display:'flex',flexDirection:'column',gap:'8px'}}>{renderList(critical, 'red')}</div></>}
-      {warnings.length > 0 && <><div className="sec-bar" style={{background:'var(--amber)',marginBottom:'10px'}}>⚠️ Warnings</div><div className="mb-16" style={{display:'flex',flexDirection:'column',gap:'8px'}}>{renderList(warnings, 'amber')}</div></>}
-      {positive.length > 0 && <><div className="sec-bar" style={{background:'var(--green)',marginBottom:'10px'}}>✅ Positives</div><div className="mb-16" style={{display:'flex',flexDirection:'column',gap:'8px'}}>{renderList(positive, 'green')}</div></>}
-      {recs.length > 0 && <><div className="sec-bar" style={{background:'var(--navy)',marginBottom:'10px'}}>💡 Recommendations</div><div className="mb-16" style={{display:'flex',flexDirection:'column',gap:'8px'}}>{renderList(recs, 'blue')}</div></>}
+      <div style={{ marginBottom: "16px" }}>
+        <div className="page-title">AI Insights Engine</div>
+        <div className="page-sub">Auto-generated from Daily Log rules engine · Updates with every transaction</div>
+      </div>
+      {critical.length > 0 && <><div className="sec-bar" style={{background:'var(--red)',marginBottom:'8px'}}>🚨 Critical Issues</div><div className="mb-8" style={{display:'flex',flexDirection:'column',gap:'8px'}}>{renderList(critical, 'red')}</div></>}
+      {warnings.length > 0 && <><div className="sec-bar" style={{background:'var(--amber)',marginBottom:'8px'}}>⚠️ Warnings</div><div className="mb-8" style={{display:'flex',flexDirection:'column',gap:'8px'}}>{renderList(warnings, 'amber')}</div></>}
+      {positive.length > 0 && <><div className="sec-bar" style={{background:'var(--green)',marginBottom:'8px'}}>✅ Positives</div><div className="mb-8" style={{display:'flex',flexDirection:'column',gap:'8px'}}>{renderList(positive, 'green')}</div></>}
+      {recs.length > 0 && <><div className="sec-bar" style={{background:'var(--navy)',marginBottom:'8px'}}>💡 Recommendations</div><div className="mb-8" style={{display:'flex',flexDirection:'column',gap:'8px'}}>{renderList(recs, 'blue')}</div></>}
     </>
   );
 }

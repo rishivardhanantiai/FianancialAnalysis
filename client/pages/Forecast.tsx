@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Layout from "@/components/Layout";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -69,7 +69,18 @@ export default function Forecast() {
   const { transactions, loading, error } = useTransactions();
   const [revAlphas, setRevAlphas] = useState<AlphaTriplet>([...DEFAULT_REVENUE_ALPHAS]);
   const [expAlphas, setExpAlphas] = useState<AlphaTriplet>([...DEFAULT_EXPENSE_ALPHAS]);
-  const [openingCash, setOpeningCash] = useState(500000);
+  const [openingCash, setOpeningCash] = useState(() => {
+    try {
+      const stored = localStorage.getItem("forecast_opening_cash");
+      return stored ? Number(stored) || 500000 : 500000;
+    } catch {
+      return 500000;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem("forecast_opening_cash", String(openingCash));
+  }, [openingCash]);
 
   const currentMonth = getCurrentMonth();
 
@@ -107,9 +118,19 @@ export default function Forecast() {
 
   // Cash flow rows
   const cfRows = useMemo(() => {
-    let cash = openingCash;
-    return forecast.months.map((f) => {
-      const openCash  = cash;
+    // Add opening cash only once: prior to the first forecast month that
+    // follows the last actual month. If there are no actual months, apply
+    // opening cash before the first forecast month.
+    const lastActualMonth = actualMonths.length > 0 ? actualMonths[actualMonths.length - 1] : null;
+    let cash = 0;
+    return forecast.months.map((f, idx) => {
+      // apply opening cash only once at the beginning of the forecast window
+      if (idx === 0) {
+        if (!lastActualMonth || f.month > lastActualMonth) {
+          cash += openingCash;
+        }
+      }
+      const openCash = cash;
       const closeCash = cash + f.netCF;
       cash = closeCash;
       const runway =

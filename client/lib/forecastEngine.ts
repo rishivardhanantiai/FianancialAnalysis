@@ -40,17 +40,26 @@ export function getRollingActuals(
   referenceMonth: string,
   n: number = 3
 ): number[] {
-  const allMonths = Object.keys(monthlyTotals).sort();
-  const refIdx = allMonths.indexOf(referenceMonth);
-  const endIdx = refIdx >= 0 ? refIdx : allMonths.length - 1;
-
+  // Build rolling actuals strictly relative to the reference month
+  // so missing months (e.g. April/May) become zeros instead of
+  // falling back to the last available month.
   const result: number[] = [];
-  for (let i = endIdx; i >= 0 && result.length < n; i--) {
-    result.push(monthlyTotals[allMonths[i]] ?? 0);
+  let [yearStr, monthStr] = referenceMonth.split("-").map((s) => s);
+  let year = parseInt(yearStr, 10);
+  let month = parseInt(monthStr, 10);
+
+  for (let i = 0; i < n; i++) {
+    const key = `${year}-${String(month).padStart(2, "0")}`;
+    result.push(monthlyTotals[key] ?? 0);
+    // move back one month
+    month -= 1;
+    if (month === 0) {
+      month = 12;
+      year -= 1;
+    }
   }
-  // Pad with zeros if not enough history
-  while (result.length < n) result.push(0);
-  return result; // [A_t, A_{t-1}, A_{t-2}]
+
+  return result; // [A_t, A_{t-1}, A_{t-2}] (zeros when months missing)
 }
 
 /**

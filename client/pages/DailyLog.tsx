@@ -48,7 +48,7 @@ const EMPTY_FORM = {
   costt: "",
   owner: "",
   notes: "",
-  business_unit: "India",
+  business_unit: "",
   invoice_number: "",
   invoice_url: "",
 };
@@ -198,14 +198,25 @@ export default function DailyLog() {
             </div>
             <div className="form-group">
               <label>BU</label>
-              <select
-                value={formData.business_unit}
-                onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
-              >
-                <option>India</option>
-                <option>UAE</option>
-                <option>UK</option>
-              </select>
+              {formData.type === "Revenue" ? (
+                <select
+                  value={formData.business_unit}
+                  onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
+                >
+                  <option value="">— Select —</option>
+                  <option>CFB</option>
+                  <option>B2B</option>
+                  <option>D2C</option>
+                  <option>SS</option>
+                </select>
+              ) : (
+                <select
+                  value={formData.business_unit}
+                  onChange={(e) => setFormData({ ...formData, business_unit: e.target.value })}
+                >
+                  <option value="">—</option>
+                </select>
+              )}
             </div>
             <div className="form-group">
               <label>Type</label>
@@ -309,6 +320,15 @@ export default function DailyLog() {
                 value={formData.customer}
                 onChange={(e) => setFormData({ ...formData, customer: e.target.value })}
                 placeholder="Customer"
+              />
+            </div>
+            <div className="form-group">
+              <label>Notes</label>
+              <input
+                type="text"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Optional notes"
               />
             </div>
             <div className="form-group">
@@ -436,9 +456,10 @@ export default function DailyLog() {
               }}
             >
               <option value="">All BUs</option>
-              <option>India</option>
-              <option>UAE</option>
-              <option>UK</option>
+              <option>CFB</option>
+              <option>B2B</option>
+              <option>D2C</option>
+              <option>SS</option>
             </select>
           </div>
         </div>
@@ -456,18 +477,19 @@ export default function DailyLog() {
                 <th>Amount</th>
                 <th>Dept / Project</th>
                 <th>Customer / Owner</th>
+                <th>Notes</th>
                 <th>Invoice</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="empty">Loading...</td></tr>
+                <tr><td colSpan={10} className="empty">Loading...</td></tr>
               ) : filteredTransactions.length > 0 ? (
                 filteredTransactions.map((txn) => (
                   <tr key={txn.id}>
                     <td>{txn.date}</td>
-                    <td className="fw-bold">{txn.business_unit || "India"}</td>
+                    <td className="fw-bold">{txn.business_unit || "—"}</td>
                     <td>
                       <span className={`tag ${txn.type === "Revenue" ? "green" : "red"}`}>
                         {txn.type}
@@ -484,6 +506,19 @@ export default function DailyLog() {
                     <td>
                       <div className="fw-bold">{txn.customer || "—"}</div>
                       <div style={{ fontSize: "10px", color: "var(--muted)" }}>{txn.owner}</div>
+                    </td>
+                    <td>
+                      <div
+                        title={txn.notes || ""}
+                        style={{
+                          maxWidth: "180px",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {txn.notes || "—"}
+                      </div>
                     </td>
                     <td>
                       {txn.invoice_url ? (
@@ -510,7 +545,7 @@ export default function DailyLog() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={9} className="empty">No records found</td></tr>
+                <tr><td colSpan={10} className="empty">No records found</td></tr>
               )}
             </tbody>
           </table>

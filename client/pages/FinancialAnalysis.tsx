@@ -116,6 +116,14 @@ export default function FinancialAnalysis() {
   const targetProfit = targetRev - targetExp;
 
   const currentMonth = new Date().toISOString().slice(0, 7);
+  const visibleTargetMonths = months.length > 0 ? months : [currentMonth];
+
+  const savePeriodTarget = (label: "Revenue" | "Expenses", value: number) => {
+    const perMonthTarget = value / visibleTargetMonths.length;
+    for (const month of visibleTargetMonths) {
+      setTarget(month, label === "Revenue" ? { revenue: perMonthTarget } : { expenses: perMonthTarget });
+    }
+  };
 
   const chartData = months.map((m) => ({
     month: friendlyMonth(m),
@@ -200,9 +208,7 @@ export default function FinancialAnalysis() {
                       {row.label !== "Profit" ? (
                         <EditableTargetCell
                           value={row.label === "Revenue" ? targetRev : targetExp}
-                          onSave={(v) =>
-                            setTarget(currentMonth, row.label === "Revenue" ? { revenue: v } : { expenses: v })
-                          }
+                          onSave={(v) => savePeriodTarget(row.label as "Revenue" | "Expenses", v)}
                         />
                       ) : (
                         <span className="fw-bold" style={{ color: "var(--navy)" }}>{formatCurrency(targetProfit)}</span>
