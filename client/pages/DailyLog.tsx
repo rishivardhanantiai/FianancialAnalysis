@@ -57,7 +57,8 @@ export default function DailyLog() {
   const { transactions, loading, error, addTransaction, deleteTransaction, refetch } =
     useTransactions();
   const { uploadInvoice, uploading: uploadInProgress, error: uploadError } = useInvoiceUpload();
-
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"" | "Revenue" | "Expense">("");
   const [filterBU, setFilterBU] = useState("");
@@ -88,11 +89,11 @@ export default function DailyLog() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const result = await uploadInvoice(file);
+    const result = await uploadInvoice(file); // YOU MISSED THIS LINE
     if (result) {
-      setFormData({ ...formData, invoice_url: result.url });
+      setFormData({ ...formData, invoice_url: result.path }); // Save the path!
     }
-  };
+  }; 
 
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,9 +164,49 @@ export default function DailyLog() {
       alert(err instanceof Error ? err.message : "Failed to delete transaction");
     }
   };
+  const viewInvoice = async (path: string) => {
+    try {
+      const res = await fetch(`/api/invoices/url?path=${encodeURIComponent(path)}`);
+      const data = await res.json();
+      
+      if (data.url) {
+        setPreviewUrl(data.url); // <--- OPEN THE PANEL INSTEAD OF NEW TAB
+      } else {
+        alert("Could not generate a secure link for this invoice.");
+      }
+    } catch (err) {
+      console.error("Failed to fetch secure invoice URL:", err);
+    }
+  };
 
-  const handleBulkDownload = () => {
-    window.location.href = "/api/invoices/download";
+
+  const handleBulkDownload = async () => {
+    try {
+      setIsExporting(true);
+      const res = await fetch("/api/invoices/download");
+      
+      if (!res.ok) throw new Error("Failed to generate export.");
+
+      // Convert the response to a file Blob
+      const blob = await res.blob();
+      
+      // Create a temporary link to trigger the browser's download
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `MIS_Invoices_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Export failed. Please try again.");
+      console.error(err);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
@@ -403,10 +444,12 @@ export default function DailyLog() {
           <div style={{ display: "flex", gap: "8px" }}>
             <button
               onClick={handleBulkDownload}
+              disabled={isExporting}
               className="btn-ui btn-outline"
               style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px" }}
             >
-              <Download className="w-3 h-3" /> Export All Invoices
+              {isExporting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+              {isExporting ? "Exporting..." : "Export All Invoices"}
             </button>
             <button
               onClick={() => refetch()}
@@ -522,15 +565,20 @@ export default function DailyLog() {
                     </td>
                     <td>
                       {txn.invoice_url ? (
-                        <a
-                          href={txn.invoice_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => viewInvoice(txn.invoice_url!)} // Use the path from DB
                           className="tag blue"
-                          style={{ textDecoration: "none", display: "inline-flex", gap: "4px" }}
+                          style={{ 
+                            textDecoration: "none", 
+                            display: "inline-flex", 
+                            gap: "4px", 
+                            cursor: "pointer",
+                            border: "none",
+                            background: "none"
+                          }}
                         >
                           <FileText className="w-3 h-3" /> View <ExternalLink className="w-2 h-2" />
-                        </a>
+                        </button>
                       ) : "—"}
                     </td>
                     <td>
@@ -551,6 +599,68 @@ export default function DailyLog() {
           </table>
         </div>
       </div>
+      {/* --- INVOICE PREVIEW MODAL --- */}
+      {previewUrl && (
+        <div 
+          style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            zIndex: 9999,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "20px"
+          }}
+          onClick={() => setPreviewUrl(null)} // Close if they click the dark background
+        >
+          <div 
+            style={{
+              backgroundColor: "white",
+              borderRadius: "8px",
+              width: "100%", maxWidth: "800px", height: "85vh",
+              display: "flex", flexDirection: "column",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+              overflow: "hidden"
+            }}
+            onClick={(e) => e.stopPropagation()} // Prevent clicks inside the box from closing it
+          >
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--f-border)" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Invoice Preview</h3>
+              
+              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                {/* Download Button */}
+                <a 
+                  href={previewUrl} 
+                  download 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="btn-ui btn-primary"
+                  style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px" }}
+                >
+                  <Download className="w-4 h-4" /> Download
+                </a>
+                
+                {/* Close Button */}
+                <button 
+                  onClick={() => setPreviewUrl(null)}
+                  style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}
+                >
+                  <X className="w-5 h-5 text-gray-500 hover:text-gray-800" />
+                </button>
+              </div>
+            </div>
+
+            {/* Document Viewer (Iframe) */}
+            <div style={{ flex: 1, backgroundColor: "#f1f5f9" }}>
+              <iframe 
+                src={previewUrl} 
+                style={{ width: "100%", height: "100%", border: "none" }}
+                title="Secure Invoice Preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+      {/* --- END MODAL --- */}
     </Layout>
   );
 }

@@ -15,7 +15,7 @@ import Projects from "./pages/Projects";
 import Departments from "./pages/Departments";
 import Forecast from "./pages/Forecast";
 import NotFound from "./pages/NotFound";
-
+import ImportData from "./pages/ImportData";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -35,6 +35,7 @@ const App = () => (
             <Route path="/forecast" element={<Forecast />} />
             <Route path="/insights" element={<Index />} />
             <Route path="/cashflow" element={<Index />} />
+            <Route path="/import" element={<ImportData />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

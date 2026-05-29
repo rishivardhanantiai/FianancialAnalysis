@@ -13,6 +13,7 @@ export default function Sidebar() {
   const path = location.pathname;
   let activeTab = "dashboard";
   if (path === "/log") activeTab = "log";
+  else if (path === "/import") activeTab = "import"; // <-- Added
   else if (path === "/analysis") activeTab = "analysis";
   else if (path === "/projects") activeTab = "projects";
   else if (path === "/departments") activeTab = "departments";
@@ -24,6 +25,7 @@ export default function Sidebar() {
   const PAGE_TITLES: Record<string, string> = {
     dashboard: "Dashboard",
     log: "Daily Log",
+    import: "Import Data", // <-- Added
     analysis: "Financial Analysis",
     projects: "Project Tracker",
     departments: "Department Tracker",
@@ -52,6 +54,7 @@ export default function Sidebar() {
         {[
           { id: "dashboard", icon: "📊" },
           { id: "log", icon: "📋" },
+          { id: "import", icon: "📥" }, // <-- Added
         ].map(({ id, icon }) => (
           <button
             key={id}
@@ -130,4 +133,3 @@ export default function Sidebar() {
     </>
   );
 }
-
