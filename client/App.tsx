@@ -17,7 +17,7 @@ import Forecast from "./pages/Forecast";
 import NotFound from "./pages/NotFound";
 import ImportData from "./pages/ImportData";
 
-// 👉 1. IMPORT THE NEW PAGE HERE
+
 import GenerateInvoice from "./pages/GenerateInvoice"; 
 
 const queryClient = new QueryClient();
@@ -41,7 +41,7 @@ const App = () => (
             <Route path="/cashflow" element={<Index />} />
             <Route path="/import" element={<ImportData />} />
             
-            {/* 👉 2. ADD THE ROUTE HERE */}
+  
             <Route path="/generate-invoice" element={<GenerateInvoice />} />
             
             <Route path="*" element={<NotFound />} />

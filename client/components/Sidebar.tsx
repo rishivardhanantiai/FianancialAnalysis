@@ -21,7 +21,6 @@ export default function Sidebar() {
   else if (path === "/insights") activeTab = "insights";
   else if (path === "/cashflow") activeTab = "cashflow";
   else if (path === "/") activeTab = "dashboard";
-  // 👉 ADD THIS LINE
   else if (path === "/generate-invoice") activeTab = "generate-invoice"; 
 
   const PAGE_TITLES: Record<string, string> = {
@@ -34,7 +33,6 @@ export default function Sidebar() {
     forecast: "3-Month Forecast",
     insights: "AI Insights",
     cashflow: "Cash Flow",
-    // 👉 ADD THIS LINE
     "generate-invoice": "Generate Invoice", 
   };
 
@@ -58,7 +56,6 @@ export default function Sidebar() {
           { id: "dashboard", icon: "📊" },
           { id: "log", icon: "📋" },
           { id: "import", icon: "📥" },
-          // 👉 ADD THIS OBJECT TO THE ARRAY
           { id: "generate-invoice", icon: "📄" }, 
         ].map(({ id, icon }) => (
           <button
