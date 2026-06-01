@@ -13,7 +13,7 @@ export default function Sidebar() {
   const path = location.pathname;
   let activeTab = "dashboard";
   if (path === "/log") activeTab = "log";
-  else if (path === "/import") activeTab = "import"; // <-- Added
+  else if (path === "/import") activeTab = "import";
   else if (path === "/analysis") activeTab = "analysis";
   else if (path === "/projects") activeTab = "projects";
   else if (path === "/departments") activeTab = "departments";
@@ -21,24 +21,27 @@ export default function Sidebar() {
   else if (path === "/insights") activeTab = "insights";
   else if (path === "/cashflow") activeTab = "cashflow";
   else if (path === "/") activeTab = "dashboard";
+  // 👉 ADD THIS LINE
+  else if (path === "/generate-invoice") activeTab = "generate-invoice"; 
 
   const PAGE_TITLES: Record<string, string> = {
     dashboard: "Dashboard",
     log: "Daily Log",
-    import: "Import Data", // <-- Added
+    import: "Import Data",
     analysis: "Financial Analysis",
     projects: "Project Tracker",
     departments: "Department Tracker",
     forecast: "3-Month Forecast",
     insights: "AI Insights",
     cashflow: "Cash Flow",
+    // 👉 ADD THIS LINE
+    "generate-invoice": "Generate Invoice", 
   };
 
   const nav = (id: string) => {
     navigate(id === "dashboard" ? "/" : `/${id}`);
   };
 
-  // Mock status for now, or could be passed as props/context
   const status = "red";
 
   return (
@@ -54,7 +57,9 @@ export default function Sidebar() {
         {[
           { id: "dashboard", icon: "📊" },
           { id: "log", icon: "📋" },
-          { id: "import", icon: "📥" }, // <-- Added
+          { id: "import", icon: "📥" },
+          // 👉 ADD THIS OBJECT TO THE ARRAY
+          { id: "generate-invoice", icon: "📄" }, 
         ].map(({ id, icon }) => (
           <button
             key={id}

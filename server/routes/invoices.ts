@@ -180,3 +180,103 @@ export const handleGetInvoiceUrl: RequestHandler = async (req, res) => {
     return res.status(500).json({ error: "Failed to generate secure link" });
   }
 };
+
+
+// --- NEW INVOICE GENERATION ROUTES (PHASE 2) ---
+
+/**
+ * Save a newly generated invoice to the database
+ * POST /api/invoices
+ */
+export const handleCreateInvoice: RequestHandler = async (req, res) => {
+  try {
+    const { invoice_number, client_details, line_items, total_amount, status, invoice_url } = req.body;
+
+    if (!invoice_number || total_amount === undefined) {
+      return res.status(400).json({ error: "Invoice number and total amount are required." });
+    }
+
+    const supabase = getSupabaseAdminClient();
+    
+    const { data, error } = await supabase
+      .from("invoices")
+      .insert([{ 
+        invoice_number, 
+        client_details, 
+        line_items, 
+        total_amount, 
+        status: status || 'Draft', 
+        invoice_url 
+      }])
+      .select("*")
+      .single();
+
+    if (error) throw error;
+
+    return res.status(201).json({ invoice: data });
+  } catch (error) {
+    console.error("Create Invoice Error:", error);
+    return res.status(500).json({ 
+      error: error instanceof Error ? error.message : "Failed to create invoice" 
+    });
+  }
+};
+
+/**
+ * Lookup an invoice by its number to link to a transaction
+ * GET /api/invoices/lookup/:invoiceNumber
+ */
+export const handleLookupInvoice: RequestHandler = async (req, res) => {
+  try {
+    const { invoiceNumber } = req.params;
+    
+    if (!invoiceNumber) {
+      return res.status(400).json({ error: "Invoice number is required" });
+    }
+
+    const supabase = getSupabaseAdminClient();
+    
+    const { data, error } = await supabase
+      .from("invoices")
+      .select("id, invoice_number, invoice_url")
+      .eq("invoice_number", invoiceNumber)
+      .single();
+
+    if (error) {
+      // Supabase throws error code PGRST116 if .single() finds no rows.
+      // This is normal! It just means the user typed an invoice that doesn't exist.
+      if (error.code === 'PGRST116') {
+        return res.status(200).json({ exists: false });
+      }
+      throw error;
+    }
+
+    // Match found!
+    return res.status(200).json({ exists: true, invoice: data });
+  } catch (error) {
+    console.error("Lookup Invoice Error:", error);
+    return res.status(500).json({ error: "Failed to lookup invoice" });
+  }
+};
+
+/**
+ * Fetch all generated invoices (For the future Invoices Dashboard)
+ * GET /api/invoices
+ */
+export const handleListInvoices: RequestHandler = async (_req, res) => {
+  try {
+    const supabase = getSupabaseAdminClient();
+    
+    const { data, error } = await supabase
+      .from("invoices")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    return res.status(200).json({ invoices: data });
+  } catch (error) {
+    console.error("List Invoices Error:", error);
+    return res.status(500).json({ error: "Failed to list invoices" });
+  }
+};

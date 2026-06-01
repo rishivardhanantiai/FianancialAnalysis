@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import Layout from "@/components/Layout";
-import { Trash2, RefreshCw, Upload, FileText, Download, ExternalLink, X } from "lucide-react";
+import { Trash2, RefreshCw, Upload, FileText, Download, ExternalLink, X, Check } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useInvoiceUpload } from "@/hooks/useInvoiceUpload";
 import type { TransactionRecord } from "@shared/api";
@@ -67,6 +67,10 @@ export default function DailyLog() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // --- NEW PHASE 2 STATES ---
+  const [lookupStatus, setLookupStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
+  const [linkedInvoiceId, setLinkedInvoiceId] = useState<string | null>(null);
+
   const filteredTransactions = transactions
     .filter((t) => {
       const searchLower = search.toLowerCase();
@@ -85,13 +89,40 @@ export default function DailyLog() {
     .filter((t) => (filterType ? t.type === filterType : true))
     .filter((t) => (filterBU ? t.business_unit === filterBU : true));
 
+  // --- NEW VERIFY FUNCTION ---
+  const handleVerifyInvoice = async () => {
+    if (!formData.invoice_number.trim()) return;
+    
+    setLookupStatus("loading");
+    setLinkedInvoiceId(null);
+
+    try {
+      const res = await fetch(`/api/invoices/lookup/${formData.invoice_number.trim()}`);
+      if (!res.ok) throw new Error("Lookup failed");
+      
+      const data = await res.json();
+      
+      if (data.exists && data.invoice) {
+        setLookupStatus("found");
+        setLinkedInvoiceId(data.invoice.id);
+        // Link the URL automatically so the Excel export still works beautifully
+        setFormData(prev => ({ ...prev, invoice_url: data.invoice.invoice_url }));
+      } else {
+        setLookupStatus("not_found");
+      }
+    } catch (error) {
+      console.error("Lookup error:", error);
+      setLookupStatus("not_found");
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const result = await uploadInvoice(file); // YOU MISSED THIS LINE
+    const result = await uploadInvoice(file); 
     if (result) {
-      setFormData({ ...formData, invoice_url: result.path }); // Save the path!
+      setFormData({ ...formData, invoice_url: result.path }); 
     }
   }; 
 
@@ -132,7 +163,8 @@ export default function DailyLog() {
 
     setSubmitting(true);
     try {
-      await addTransaction({
+      // 1. Build the base payload with the standard fields
+      const payload: any = {
         date: formData.date,
         type: formData.type,
         amount: parseFloat(formData.amount),
@@ -144,10 +176,23 @@ export default function DailyLog() {
         owner: formData.owner,
         notes: formData.notes,
         business_unit: formData.business_unit,
-        invoice_number: formData.invoice_number,
-        invoice_url: formData.invoice_url,
-      });
+      };
+
+      // 2. ONLY attach invoice data if the user actually typed or uploaded something
+      if (formData.invoice_number && formData.invoice_number.trim() !== "") {
+        payload.invoice_number = formData.invoice_number;
+      }
+      
+      if (formData.invoice_url && formData.invoice_url.trim() !== "") {
+        payload.invoice_url = formData.invoice_url;
+      }
+
+      // 3. Send the clean payload
+      await addTransaction(payload);
+      
       setFormData({ ...EMPTY_FORM, date: new Date().toISOString().split("T")[0] });
+      setLookupStatus("idle");
+      setLinkedInvoiceId(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Failed to add transaction");
@@ -164,13 +209,14 @@ export default function DailyLog() {
       alert(err instanceof Error ? err.message : "Failed to delete transaction");
     }
   };
+
   const viewInvoice = async (path: string) => {
     try {
       const res = await fetch(`/api/invoices/url?path=${encodeURIComponent(path)}`);
       const data = await res.json();
       
       if (data.url) {
-        setPreviewUrl(data.url); // <--- OPEN THE PANEL INSTEAD OF NEW TAB
+        setPreviewUrl(data.url); 
       } else {
         alert("Could not generate a secure link for this invoice.");
       }
@@ -179,7 +225,6 @@ export default function DailyLog() {
     }
   };
 
-
   const handleBulkDownload = async () => {
     try {
       setIsExporting(true);
@@ -187,10 +232,7 @@ export default function DailyLog() {
       
       if (!res.ok) throw new Error("Failed to generate export.");
 
-      // Convert the response to a file Blob
       const blob = await res.blob();
-      
-      // Create a temporary link to trigger the browser's download
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -198,7 +240,6 @@ export default function DailyLog() {
       document.body.appendChild(a);
       a.click();
       
-      // Cleanup
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
@@ -306,15 +347,36 @@ export default function DailyLog() {
                 placeholder="Project Name"
               />
             </div>
+            
+            {/* --- UPDATED INV # FIELD WITH VERIFY BUTTON --- */}
             <div className="form-group">
               <label>Inv #</label>
-              <input
-                type="text"
-                value={formData.invoice_number}
-                onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                placeholder="INV-001"
-              />
+              <div style={{ display: "flex", gap: "6px" }}>
+                <input
+                  type="text"
+                  value={formData.invoice_number}
+                  onChange={(e) => {
+                    setFormData({ ...formData, invoice_number: e.target.value });
+                    setLookupStatus("idle");
+                    setLinkedInvoiceId(null);
+                  }}
+                  placeholder="INV-001"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={handleVerifyInvoice}
+                  disabled={!formData.invoice_number || lookupStatus === "loading"}
+                  className="btn-ui btn-outline"
+                  style={{ padding: "0 10px" }}
+                >
+                  {lookupStatus === "loading" ? "..." : "Verify"}
+                </button>
+              </div>
+              {lookupStatus === "found" && <div style={{ color: "var(--success)", fontSize: "10px", marginTop: "4px", fontWeight: 600 }}>✅ Invoice Linked</div>}
+              {lookupStatus === "not_found" && <div style={{ color: "var(--danger)", fontSize: "10px", marginTop: "4px", fontWeight: 600 }}>⚠️ Not found. Upload file.</div>}
             </div>
+
             <div className="form-group">
               <label>Owner</label>
               <input
@@ -372,40 +434,62 @@ export default function DailyLog() {
                 placeholder="Optional notes"
               />
             </div>
+
+            {/* --- UPDATED LOCKED FILE UPLOAD FIELD --- */}
             <div className="form-group">
               <label>Invoice Attachment</label>
               <div style={{ display: "flex", gap: "8px" }}>
-                <div style={{ flex: 1, position: "relative" }}>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    style={{ display: "none" }}
-                    accept=".pdf,.jpg,.jpeg,.png"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadInProgress}
-                    className="btn-ui btn-outline"
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px",
-                      borderStyle: "dashed",
-                    }}
-                  >
-                    {uploadInProgress ? (
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Upload className="w-3 h-3" />
-                    )}
-                    {formData.invoice_url ? "Change" : "Upload"}
-                  </button>
-                </div>
-                {formData.invoice_url && (
+                {lookupStatus === "found" ? (
+                  <div style={{ flex: 1, padding: "8px", border: "1px dashed var(--success)", borderRadius: "6px", backgroundColor: "var(--success-bg)", color: "var(--success)", fontSize: "12px", textAlign: "center", fontWeight: 600 }}>
+                    ✅ File Linked Automatically
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, position: "relative" }}>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      style={{ display: "none" }}
+                      accept=".pdf,.jpg,.jpeg,.png"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={
+                        uploadInProgress || 
+                        (formData.invoice_number !== "" && lookupStatus !== "not_found")
+                      }
+                      className="btn-ui btn-outline"
+                      title={(formData.invoice_number !== "" && lookupStatus !== "not_found") ? "Click Verify first to check for existing invoice" : ""}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                        borderStyle: "dashed",
+                        opacity: (formData.invoice_number !== "" && lookupStatus !== "not_found") ? 0.5 : 1,
+                        cursor: (formData.invoice_number !== "" && lookupStatus !== "not_found") ? "not-allowed" : "pointer"
+                      }}
+                    >
+                      {uploadInProgress ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : formData.invoice_url ? (
+                        <Check className="w-3 h-3 text-success" />
+                      ) : (
+                        <Upload className="w-3 h-3" />
+                      )}
+                      {(formData.invoice_number !== "" && lookupStatus !== "not_found") 
+                        ? "Locked (Verify First)" 
+                        : formData.invoice_url 
+                        ? "Change" 
+                        : "Upload"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Show the X to remove file ONLY if it was a manual upload (not a linked one) */}
+                {formData.invoice_url && lookupStatus !== "found" && (
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, invoice_url: "" })}
@@ -417,6 +501,7 @@ export default function DailyLog() {
                 )}
               </div>
             </div>
+            
             <div style={{ display: "flex", alignItems: "flex-end" }}>
               <button
                 type="submit"
@@ -429,7 +514,6 @@ export default function DailyLog() {
             </div>
           </div>
         </form>
-
       </div>
 
       {/* Transaction Log */}
@@ -566,7 +650,7 @@ export default function DailyLog() {
                     <td>
                       {txn.invoice_url ? (
                         <button
-                          onClick={() => viewInvoice(txn.invoice_url!)} // Use the path from DB
+                          onClick={() => viewInvoice(txn.invoice_url!)}
                           className="tag blue"
                           style={{ 
                             textDecoration: "none", 
@@ -599,6 +683,7 @@ export default function DailyLog() {
           </table>
         </div>
       </div>
+      
       {/* --- INVOICE PREVIEW MODAL --- */}
       {previewUrl && (
         <div 
@@ -609,7 +694,7 @@ export default function DailyLog() {
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: "20px"
           }}
-          onClick={() => setPreviewUrl(null)} // Close if they click the dark background
+          onClick={() => setPreviewUrl(null)}
         >
           <div 
             style={{
@@ -620,14 +705,12 @@ export default function DailyLog() {
               boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
               overflow: "hidden"
             }}
-            onClick={(e) => e.stopPropagation()} // Prevent clicks inside the box from closing it
+            onClick={(e) => e.stopPropagation()} 
           >
-            {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 20px", borderBottom: "1px solid var(--f-border)" }}>
               <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 600 }}>Invoice Preview</h3>
               
               <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                {/* Download Button */}
                 <a 
                   href={previewUrl} 
                   download 
@@ -639,7 +722,6 @@ export default function DailyLog() {
                   <Download className="w-4 h-4" /> Download
                 </a>
                 
-                {/* Close Button */}
                 <button 
                   onClick={() => setPreviewUrl(null)}
                   style={{ background: "none", border: "none", cursor: "pointer", padding: "4px" }}
@@ -649,7 +731,6 @@ export default function DailyLog() {
               </div>
             </div>
 
-            {/* Document Viewer (Iframe) */}
             <div style={{ flex: 1, backgroundColor: "#f1f5f9" }}>
               <iframe 
                 src={previewUrl} 
@@ -660,8 +741,6 @@ export default function DailyLog() {
           </div>
         </div>
       )}
-      {/* --- END MODAL --- */}
     </Layout>
   );
 }
-

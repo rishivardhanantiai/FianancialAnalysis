@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 export interface StagedTransaction {
   id: string;
@@ -11,6 +11,7 @@ export interface StagedTransaction {
   customer: string;
   business_unit: string;
   invoice_number: string;
+  invoice_url?: string; // Added to hold the linked URL
   owner: string;
   ctype: string;
   costt: string;
@@ -49,7 +50,7 @@ function getMissingFields(row: StagedTransaction) {
   }
 
   if (row.type === "Revenue") {
-    if (!row.business_unit?.trim()) missing.push("BU");
+    // BU is now completely optional, removed the check!
     if (!row.project?.trim()) missing.push("Project");
     if (!row.customer?.trim()) missing.push("Customer");
     if (!row.ctype?.trim()) missing.push("Cust Type");
@@ -68,6 +69,9 @@ function getMissingFields(row: StagedTransaction) {
 
 export function StagingGrid({ data, onUpdate, onRemove }: Props) {
   const safeData = Array.isArray(data) ? data : [];
+  
+  // Track the verification status for each row independently
+  const [verifyStatuses, setVerifyStatuses] = useState<Record<string, "idle" | "loading" | "found" | "not_found">>({});
 
   const summary = useMemo(() => {
     const total = safeData.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
@@ -77,6 +81,30 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
 
     return { total, revenue, expense, invalid };
   }, [safeData]);
+
+  const handleVerifyInvoice = async (rowId: string, invoiceNumber: string) => {
+    if (!invoiceNumber.trim()) return;
+    
+    setVerifyStatuses((prev) => ({ ...prev, [rowId]: "loading" }));
+
+    try {
+      const res = await fetch(`/api/invoices/lookup/${invoiceNumber.trim()}`);
+      if (!res.ok) throw new Error("Lookup failed");
+      
+      const data = await res.json();
+      
+      if (data.exists && data.invoice) {
+        setVerifyStatuses((prev) => ({ ...prev, [rowId]: "found" }));
+        // Auto-link the URL so it gets saved with the bulk upload for Excel exports
+        onUpdate(rowId, "invoice_url", data.invoice.invoice_url);
+      } else {
+        setVerifyStatuses((prev) => ({ ...prev, [rowId]: "not_found" }));
+      }
+    } catch (error) {
+      console.error("Lookup error:", error);
+      setVerifyStatuses((prev) => ({ ...prev, [rowId]: "not_found" }));
+    }
+  };
 
   if (!safeData.length) return null;
 
@@ -108,6 +136,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
             const hasMissing = missing.length > 0;
             const isExpense = row.type === "Expense";
             const isRevenue = row.type === "Revenue";
+            const currentVerifyStatus = verifyStatuses[row.id] || "idle";
 
             const handleTypeChange = (nextType: "Revenue" | "Expense") => {
               onUpdate(row.id, "type", nextType);
@@ -295,18 +324,36 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                       <LabeledField
                         label="Inv #"
                         htmlFor={fieldId(row.id, "invoice_number")}
-                        className="col-span-12 sm:col-span-2"
+                        className="col-span-12 sm:col-span-4"
                       >
-                        <input
-                          id={fieldId(row.id, "invoice_number")}
-                          type="text"
-                          value={row.invoice_number ?? ""}
-                          onChange={(e) =>
-                            onUpdate(row.id, "invoice_number", e.target.value)
-                          }
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                          placeholder="Invoice #"
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            id={fieldId(row.id, "invoice_number")}
+                            type="text"
+                            value={row.invoice_number ?? ""}
+                            onChange={(e) => {
+                              onUpdate(row.id, "invoice_number", e.target.value);
+                              // Reset verify status when typing
+                              setVerifyStatuses((prev) => ({ ...prev, [row.id]: "idle" }));
+                            }}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                            placeholder="Invoice #"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyInvoice(row.id, row.invoice_number)}
+                            disabled={!row.invoice_number || currentVerifyStatus === "loading"}
+                            className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
+                          >
+                            {currentVerifyStatus === "loading" ? "..." : "Verify"}
+                          </button>
+                        </div>
+                        {currentVerifyStatus === "found" && (
+                          <div className="mt-1 text-xs font-semibold text-emerald-600">✅ Linked</div>
+                        )}
+                        {currentVerifyStatus === "not_found" && (
+                          <div className="mt-1 text-xs font-semibold text-rose-600">⚠️ Not found</div>
+                        )}
                       </LabeledField>
 
                       <LabeledField
@@ -381,18 +428,35 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                       <LabeledField
                         label="Inv #"
                         htmlFor={fieldId(row.id, "invoice_number")}
-                        className="col-span-12 sm:col-span-2"
+                        className="col-span-12 sm:col-span-4"
                       >
-                        <input
-                          id={fieldId(row.id, "invoice_number")}
-                          type="text"
-                          value={row.invoice_number ?? ""}
-                          onChange={(e) =>
-                            onUpdate(row.id, "invoice_number", e.target.value)
-                          }
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                          placeholder="Invoice #"
-                        />
+                        <div className="flex gap-2">
+                          <input
+                            id={fieldId(row.id, "invoice_number")}
+                            type="text"
+                            value={row.invoice_number ?? ""}
+                            onChange={(e) => {
+                              onUpdate(row.id, "invoice_number", e.target.value);
+                              setVerifyStatuses((prev) => ({ ...prev, [row.id]: "idle" }));
+                            }}
+                            className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
+                            placeholder="Invoice #"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyInvoice(row.id, row.invoice_number)}
+                            disabled={!row.invoice_number || currentVerifyStatus === "loading"}
+                            className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-50"
+                          >
+                            {currentVerifyStatus === "loading" ? "..." : "Verify"}
+                          </button>
+                        </div>
+                        {currentVerifyStatus === "found" && (
+                          <div className="mt-1 text-xs font-semibold text-emerald-600">✅ Linked</div>
+                        )}
+                        {currentVerifyStatus === "not_found" && (
+                          <div className="mt-1 text-xs font-semibold text-rose-600">⚠️ Not found</div>
+                        )}
                       </LabeledField>
 
                       <LabeledField

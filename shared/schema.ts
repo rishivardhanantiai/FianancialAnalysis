@@ -15,6 +15,12 @@ export const transactionSchema = z
     business_unit: z.string().optional(),
     invoice_number: z.string().optional(),
     invoice_url: z.string().optional(),
+    
+    // --- PHASE 2 ADDITION ---
+    // Purpose: Links this transaction directly to a generated invoice in the new 'invoices' table.
+    // Reason: Prevents duplicating the same PDF in the storage bucket. If a user types a valid 
+    // generated invoice number, we save this ID instead of requiring a new manual file upload.
+    linked_invoice_id: z.string().optional(),
   })
   .refine(
     (data) => {

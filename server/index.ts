@@ -14,7 +14,11 @@ import {
   handleBulkDownloadInvoices,
   uploadMiddleware,
   handleGetInvoiceUrl,
+  handleCreateInvoice, 
+  handleLookupInvoice, 
+  handleListInvoices
 } from "./routes/invoices";
+
 import importRoutes from "./routes/import";
 
 export function createServer() {
@@ -42,5 +46,8 @@ export function createServer() {
   app.post("/api/invoices/upload", uploadMiddleware, handleUploadInvoice);
   app.get("/api/invoices/download", handleBulkDownloadInvoices);
   app.get("/api/invoices/url", handleGetInvoiceUrl);
+  app.post("/api/invoices", handleCreateInvoice);
+  app.get("/api/invoices/lookup/:invoiceNumber", handleLookupInvoice);
+  app.get("/api/invoices", handleListInvoices);
   return app;
 }

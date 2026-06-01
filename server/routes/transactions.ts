@@ -26,6 +26,7 @@ function mapRowToTransaction(row: any): TransactionRecord {
     business_unit: row.business_unit ?? "",
     invoice_number: row.invoice_number ?? "",
     invoice_url: row.invoice_url ?? "",
+    linked_invoice_id: row.linked_invoice_id ?? null,
     created_at: row.created_at,
   };
 }
@@ -109,6 +110,7 @@ export const createTransaction: RequestHandler = async (req, res) => {
     business_unit: validation.data.business_unit ?? "",
     invoice_number: validation.data.invoice_number ?? "",
     invoice_url: validation.data.invoice_url ?? "",
+    linked_invoice_id: validation.data.linked_invoice_id ?? null,
   };
 
   try {
