@@ -15,13 +15,13 @@
   node_bundler = "esbuild"
 
 # API calls → Netlify Function
-# Do NOT use :splat — Netlify passes the original request path to the function.
-# serverless-http reads event.path, which Netlify sets to the original /api/*.
+# :splat is REQUIRED — without it Netlify does not invoke the function.
+# event.path inside the function still contains the original /api/* path.
 [[redirects]]
   force = true
   from = "/api/*"
   status = 200
-  to = "/.netlify/functions/api"
+  to = "/.netlify/functions/api/:splat"
 
 # SPA fallback
 [[redirects]]
