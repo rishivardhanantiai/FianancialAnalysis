@@ -10,7 +10,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ title, subtitle, children }: LayoutProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,6 +26,7 @@ export default function Layout({ title, subtitle, children }: LayoutProps) {
   // Determine status for the badge
   const status = "red";
   const statusText = "● Critical";
+  const isCA = user?.role === "ca";
 
   return (
     <div className="shell">
@@ -51,9 +52,20 @@ export default function Layout({ title, subtitle, children }: LayoutProps) {
                 year: "numeric",
               })}
             </span>
-            <button className="btn-ui btn-primary" onClick={() => navigate("/log")}>
-              + Add Transaction
-            </button>
+            {!isCA && (
+              <>
+                <button 
+                  className="btn-ui btn-outline" 
+                  onClick={() => navigate("/import")}
+                  style={{ display: "flex", alignItems: "center", gap: "6px" }}
+                >
+                  📥 Import Bank Statement
+                </button>
+                <button className="btn-ui btn-primary" onClick={() => navigate("/log")}>
+                  + Add Transaction
+                </button>
+              </>
+            )}
           </div>
         </div>
 

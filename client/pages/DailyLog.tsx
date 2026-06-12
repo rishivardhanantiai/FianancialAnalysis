@@ -1,9 +1,12 @@
 import { useState, useRef, useMemo } from "react";
 import Layout from "@/components/Layout";
+import { fetchWithAuth } from "@/lib/api";
 import { Trash2, RefreshCw, Upload, FileText, Download, ExternalLink, X, Check } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useInvoiceUpload } from "@/hooks/useInvoiceUpload";
+import { useToast } from "@/hooks/use-toast";
 import type { TransactionRecord } from "@shared/api";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 // ==========================================
 // CONSTANTS & CONFIGURATION
@@ -104,10 +107,12 @@ export default function DailyLog() {
   // --- DATA HOOKS ---
   const { transactions, loading, error, addTransaction, deleteTransaction, refetch } = useTransactions();
   const { uploadInvoice, uploading: uploadInProgress, error: uploadError } = useInvoiceUpload();
+  const { toast } = useToast();
   
   // --- UI STATES ---
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [confirmDeleteTxn, setConfirmDeleteTxn] = useState<TransactionRecord | null>(null);
   
   // --- FILTER STATES ---
   const [search, setSearch] = useState("");
@@ -160,7 +165,7 @@ export default function DailyLog() {
     setLinkedInvoiceId(null);
 
     try {
-      const res = await fetch(`/api/invoices/lookup/${formData.invoice_number.trim()}`);
+      const res = await fetchWithAuth(`/api/invoices/lookup/${formData.invoice_number.trim()}`);
       if (!res.ok) throw new Error("Lookup failed");
       
       const data = await res.json();
@@ -233,43 +238,88 @@ export default function DailyLog() {
     }
   };
 
-  const handleDelete = async (txn: TransactionRecord) => {
-    if (!window.confirm("Remove this transaction?")) return;
+  const handleDelete = (txn: TransactionRecord) => {
+    setConfirmDeleteTxn(txn);
+  };
+
+  const executeDelete = async () => {
+    if (!confirmDeleteTxn) return;
+    const txnId = confirmDeleteTxn.id;
+    setConfirmDeleteTxn(null);
     try {
-      await deleteTransaction(txn.id);
+      await deleteTransaction(txnId);
+      toast({
+        title: "Deleted",
+        description: "Transaction has been removed successfully.",
+        variant: "success",
+      });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete transaction");
+      toast({
+        title: "Delete Failed",
+        description: err instanceof Error ? err.message : "Failed to delete transaction",
+        variant: "destructive",
+      });
     }
   };
 
   const viewInvoice = async (path: string) => {
     try {
-      const res = await fetch(`/api/invoices/url?path=${encodeURIComponent(path)}`);
+      const res = await fetchWithAuth(`/api/invoices/url?path=${encodeURIComponent(path)}`);
       const data = await res.json();
       if (data.url) setPreviewUrl(data.url); 
-      else alert("Could not generate a secure link for this invoice.");
+      else toast({
+        title: "Preview Error",
+        description: "Could not generate a secure link for this invoice.",
+        variant: "destructive",
+      });
     } catch (err) {
       console.error("Failed to fetch secure invoice URL:", err);
+      toast({
+        title: "Error",
+        description: "Failed to fetch secure invoice link.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleBulkDownload = async () => {
     try {
       setIsExporting(true);
-      const res = await fetch("/api/invoices/download");
+      const res = await fetchWithAuth("/api/invoices/download");
       if (!res.ok) throw new Error("Failed to generate export.");
 
-      const blob = await res.blob();
+      // 1. Get the JSON response containing the Base64 string
+      const data = await res.json();
+
+      // 2. Decode the Base64 string back into raw binary characters
+      const byteCharacters = atob(data.fileData);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+
+      // 3. Create a perfect, uncorrupted Excel Blob
+      const blob = new Blob([byteArray], { 
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      });
+
+      // 4. Trigger the download
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `MIS_Invoices_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = data.fileName;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      
     } catch (err) {
-      alert("Export failed. Please try again.");
+      toast({
+        title: "Export Failed",
+        description: "Export failed. Please try again.",
+        variant: "destructive",
+      });
       console.error(err);
     } finally {
       setIsExporting(false);
@@ -669,6 +719,15 @@ export default function DailyLog() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog 
+        isOpen={!!confirmDeleteTxn}
+        title="Confirm Deletion"
+        message="Are you sure you want to remove this transaction record from the ledger?"
+        onConfirm={executeDelete}
+        onCancel={() => setConfirmDeleteTxn(null)}
+        confirmText="Remove"
+      />
     </Layout>
   );
 }

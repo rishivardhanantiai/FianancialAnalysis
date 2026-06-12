@@ -54,20 +54,21 @@
     --sidebar-ring: 210 50% 87%;
 
     /* Additional Financial Colors */
-    --navy: 213 57% 35%;
-    --navy-dark: 210 50% 21%;
-    --navy-light: 213 40% 45%;
-    --blue-pale: 210 50% 87%;
-    --blue-mid: 210 35% 70%;
-    --green: 109 48% 35%;
-    --green-bg: 102 59% 92%;
-    --green-light: 102 50% 70%;
-    --red: 0 67% 41%;
-    --red-bg: 0 88% 94%;
-    --red-light: 0 80% 71%;
-    --amber: 18 97% 45%;
-    --amber-bg: 21 100% 96%;
-    --amber-light: 38 92% 69%;
+    --navy: hsl(213 57% 35%);
+    --navy-dark: hsl(210 50% 21%);
+    --navy-light: hsl(213 40% 45%);
+    --blue-pale: hsl(210 50% 87%);
+    --blue-mid: hsl(210 35% 70%);
+    --green: hsl(109 48% 35%);
+    --green-bg: hsl(102 59% 92%);
+    --green-light: hsl(102 50% 70%);
+    --red: hsl(0 67% 41%);
+    --red-bg: hsl(0 88% 94%);
+    --red-light: hsl(0 80% 71%);
+    --amber: hsl(18 97% 45%);
+    --amber-bg: hsl(21 100% 96%);
+    --amber-light: hsl(38 92% 69%);
+    --f-muted: #5a718a;
   }
 
   .dark {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { TransactionRecord } from "@shared/api";
+import { fetchWithAuth } from "@/lib/api";
 
 export interface UseTransactionsReturn {
   transactions: TransactionRecord[];
@@ -19,7 +20,7 @@ export function useTransactions(): UseTransactionsReturn {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/transactions");
+      const res = await fetchWithAuth("/api/transactions");
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `Server error ${res.status}`);
@@ -39,7 +40,7 @@ export function useTransactions(): UseTransactionsReturn {
 
   const addTransaction = useCallback(
     async (payload: Omit<TransactionRecord, "id" | "created_at">): Promise<TransactionRecord> => {
-      const res = await fetch("/api/transactions", {
+      const res = await fetchWithAuth("/api/transactions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -60,12 +61,12 @@ export function useTransactions(): UseTransactionsReturn {
   );
 
   const deleteTransaction = useCallback(async (id: string): Promise<void> => {
-    let res = await fetch(`/api/transactions/${id}`, { method: "DELETE" });
+    let res = await fetchWithAuth(`/api/transactions/${id}`, { method: "DELETE" });
 
     // Some hosts may not resolve dynamic serverless routes like /api/transactions/:id.
     // Retry against index route with query param as a compatibility fallback.
     if (res.status === 404 || res.status === 405) {
-      res = await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
+      res = await fetchWithAuth(`/api/transactions?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
     }

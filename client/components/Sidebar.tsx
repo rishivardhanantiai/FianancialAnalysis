@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ChangePwModal } from "./ChangePwModal";
 
 export default function Sidebar() {
-  const { logout, changePassword } = useAuth();
+  const { logout, changePassword, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isChangePwOpen, setIsChangePwOpen] = useState(false);
@@ -22,11 +22,13 @@ export default function Sidebar() {
   else if (path === "/cashflow") activeTab = "cashflow";
   else if (path === "/") activeTab = "dashboard";
   else if (path === "/generate-invoice") activeTab = "generate-invoice"; 
+  else if (path === "/ca-portal") activeTab = "ca-portal";
+  else if (path === "/team") activeTab = "team";
 
   const PAGE_TITLES: Record<string, string> = {
     dashboard: "Dashboard",
     log: "Daily Log",
-    import: "Import Data",
+    import: "Import Bank Statement",
     analysis: "Financial Analysis",
     projects: "Project Tracker",
     departments: "Department Tracker",
@@ -34,6 +36,8 @@ export default function Sidebar() {
     insights: "AI Insights",
     cashflow: "Cash Flow",
     "generate-invoice": "Generate Invoice", 
+    "ca-portal": "CA Audit Portal",
+    team: "Manage Team",
   };
 
   const nav = (id: string) => {
@@ -41,6 +45,7 @@ export default function Sidebar() {
   };
 
   const status = "red";
+  const isCA = user?.role === "ca";
 
   return (
     <>
@@ -52,22 +57,41 @@ export default function Sidebar() {
         </div>
 
         <div className="nav-section">Core</div>
-        {[
-          { id: "dashboard", icon: "📊" },
-          { id: "log", icon: "📋" },
-          { id: "import", icon: "📥" },
-          { id: "generate-invoice", icon: "📄" }, 
-        ].map(({ id, icon }) => (
+        <button
+          className={`nav-item ${activeTab === "dashboard" ? "active" : ""}`}
+          onClick={() => nav("dashboard")}
+        >
+          <span className="icon">📊</span>
+          <span>Dashboard</span>
+          {!isCA && <span className={`status-dot ${status}`}></span>}
+        </button>
+
+        {isCA ? (
           <button
-            key={id}
-            className={`nav-item ${activeTab === id ? "active" : ""}`}
-            onClick={() => nav(id)}
+            className={`nav-item ${activeTab === "ca-portal" ? "active" : ""}`}
+            onClick={() => nav("ca-portal")}
           >
-            <span className="icon">{icon}</span>
-            <span>{PAGE_TITLES[id]}</span>
-            {id === "dashboard" && <span className={`status-dot ${status}`}></span>}
+            <span className="icon">🛡️</span>
+            <span>CA Audit Portal</span>
           </button>
-        ))}
+        ) : (
+          <>
+            <button
+              className={`nav-item ${activeTab === "log" ? "active" : ""}`}
+              onClick={() => nav("log")}
+            >
+              <span className="icon">📋</span>
+              <span>Daily Log</span>
+            </button>
+            <button
+              className={`nav-item ${activeTab === "generate-invoice" ? "active" : ""}`}
+              onClick={() => nav("generate-invoice")}
+            >
+              <span className="icon">📄</span>
+              <span>Generate Invoice</span>
+            </button>
+          </>
+        )}
 
         <div className="nav-section">Analysis</div>
         {[
@@ -109,6 +133,17 @@ export default function Sidebar() {
         >
           System
         </div>
+        
+        {!isCA && (
+          <button
+            className={`nav-item ${activeTab === "team" ? "active" : ""}`}
+            onClick={() => nav("team")}
+          >
+            <span className="icon">👥</span>
+            <span>Manage Team</span>
+          </button>
+        )}
+
         <button className="nav-item" onClick={() => setIsChangePwOpen(true)}>
           <span className="icon">🔑</span>
           <span>Change Password</span>

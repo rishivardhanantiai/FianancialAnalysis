@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { fetchWithAuth } from "@/lib/api";
 
 export interface StagedTransaction {
   id: string;
@@ -11,7 +12,7 @@ export interface StagedTransaction {
   customer: string;
   business_unit: string;
   invoice_number: string;
-  invoice_url?: string; // Added to hold the linked URL
+  invoice_url?: string; // Holds the linked URL
   owner: string;
   ctype: string;
   costt: string;
@@ -21,6 +22,8 @@ type Props = {
   data: StagedTransaction[];
   onUpdate: (id: string, field: keyof StagedTransaction, value: string | number) => void;
   onRemove: (id: string) => void;
+  onAdd: () => void; // Added onAdd callback property
+  showErrors?: boolean;
 };
 
 const BU_OPTIONS = ["CFB", "B2B", "D2C", "SS"];
@@ -37,11 +40,12 @@ function formatCurrency(value: number) {
   }).format(Number.isFinite(value) ? value : 0);
 }
 
+// Generates a predictable HTML id attribute for fields
 function fieldId(rowId: string, field: keyof StagedTransaction) {
   return `staged-${rowId}-${field}`;
 }
 
-function getMissingFields(row: StagedTransaction) {
+export function getMissingFields(row: StagedTransaction) {
   const missing: string[] = [];
 
   if (!row.date?.trim()) missing.push("Date");
@@ -50,7 +54,6 @@ function getMissingFields(row: StagedTransaction) {
   }
 
   if (row.type === "Revenue") {
-    // BU is now completely optional, removed the check!
     if (!row.project?.trim()) missing.push("Project");
     if (!row.customer?.trim()) missing.push("Customer");
     if (!row.ctype?.trim()) missing.push("Cust Type");
@@ -67,7 +70,7 @@ function getMissingFields(row: StagedTransaction) {
   return missing;
 }
 
-export function StagingGrid({ data, onUpdate, onRemove }: Props) {
+export function StagingGrid({ data, onUpdate, onRemove, onAdd, showErrors = false }: Props) {
   const safeData = Array.isArray(data) ? data : [];
   
   // Track the verification status for each row independently
@@ -88,7 +91,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
     setVerifyStatuses((prev) => ({ ...prev, [rowId]: "loading" }));
 
     try {
-      const res = await fetch(`/api/invoices/lookup/${invoiceNumber.trim()}`);
+      const res = await fetchWithAuth(`/api/invoices/lookup/${invoiceNumber.trim()}`);
       if (!res.ok) throw new Error("Lookup failed");
       
       const data = await res.json();
@@ -106,8 +109,6 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
     }
   };
 
-  if (!safeData.length) return null;
-
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <header className="flex flex-col gap-4 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
@@ -123,7 +124,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
           <StatChip label="Revenue" value={summary.revenue} tone="emerald" />
           <StatChip label="Expense" value={summary.expense} tone="rose" />
           <StatChip label="Total" value={`₹${formatCurrency(summary.total)}`} tone="blue" />
-          {summary.invalid > 0 && (
+          {summary.invalid > 0 && showErrors && (
             <StatChip label="Needs review" value={summary.invalid} tone="amber" />
           )}
         </div>
@@ -133,7 +134,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
         <div className="space-y-4 p-4 sm:p-6">
           {safeData.map((row, index) => {
             const missing = getMissingFields(row);
-            const hasMissing = missing.length > 0;
+            const hasMissing = showErrors && missing.length > 0;
             const isExpense = row.type === "Expense";
             const isRevenue = row.type === "Revenue";
             const currentVerifyStatus = verifyStatuses[row.id] || "idle";
@@ -282,7 +283,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                             onUpdate(row.id, "customer", e.target.value)
                           }
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                          placeholder="Customer name"
+                          placeholder="— Enter customer —"
                         />
                       </LabeledField>
 
@@ -317,7 +318,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                           value={row.project ?? ""}
                           onChange={(e) => onUpdate(row.id, "project", e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                          placeholder="Project"
+                          placeholder="— Enter project —"
                         />
                       </LabeledField>
 
@@ -333,7 +334,6 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                             value={row.invoice_number ?? ""}
                             onChange={(e) => {
                               onUpdate(row.id, "invoice_number", e.target.value);
-                              // Reset verify status when typing
                               setVerifyStatuses((prev) => ({ ...prev, [row.id]: "idle" }));
                             }}
                             className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
@@ -367,7 +367,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                           value={row.owner ?? ""}
                           onChange={(e) => onUpdate(row.id, "owner", e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                          placeholder="Owner"
+                          placeholder="— Enter owner —"
                         />
                       </LabeledField>
                     </>
@@ -406,7 +406,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                           value={row.customer ?? ""}
                           onChange={(e) => onUpdate(row.id, "customer", e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                          placeholder="Vendor name"
+                          placeholder="— Enter vendor —"
                         />
                       </LabeledField>
 
@@ -421,7 +421,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                           value={row.project ?? ""}
                           onChange={(e) => onUpdate(row.id, "project", e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                          placeholder="Project"
+                          placeholder="— Enter project —"
                         />
                       </LabeledField>
 
@@ -470,7 +470,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                           value={row.owner ?? ""}
                           onChange={(e) => onUpdate(row.id, "owner", e.target.value)}
                           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-100"
-                          placeholder="Owner"
+                          placeholder="— Enter owner —"
                         />
                       </LabeledField>
 
@@ -484,7 +484,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                           value={row.costt ?? ""}
                           onChange={(e) => onUpdate(row.id, "costt", e.target.value)}
                           className={`w-full rounded-xl border bg-white px-3 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-slate-100 ${
-                            !row.costt?.trim()
+                            !row.costt?.trim() && showErrors
                               ? "border-amber-400 focus:border-amber-500"
                               : "border-slate-200 focus:border-slate-400"
                           }`}
@@ -516,7 +516,7 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
                   </LabeledField>
                 </div>
 
-                {isExpense && !row.costt?.trim() && (
+                {isExpense && !row.costt?.trim() && showErrors && (
                   <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                     Expense rows need a Cost Type before saving.
                   </div>
@@ -524,6 +524,19 @@ export function StagingGrid({ data, onUpdate, onRemove }: Props) {
               </article>
             );
           })}
+
+          {/* DOTTED BOUNDARY ADD MANUAL TRANSACTION INTERACTION ACTION LINK BUTTON */}
+          <button
+            type="button"
+            onClick={onAdd}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white p-5 text-sm font-semibold text-slate-600 transition-colors hover:border-slate-400 hover:bg-slate-50 hover:text-slate-900 focus:outline-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Manual Transaction
+          </button>
         </div>
       </div>
     </section>

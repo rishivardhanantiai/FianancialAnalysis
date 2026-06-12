@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Chart from "chart.js/auto";
 import { useLocation, useNavigate } from "react-router-dom";
+import { fetchWithAuth } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Lock } from "lucide-react";
 import {
@@ -10,6 +11,8 @@ import {
   TransactionsListResponse,
 } from "@shared/api";
 import Layout from "@/components/Layout";
+import { useToast } from "@/hooks/use-toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 // ════════════════════════════════════════════════════════════════════
 // DATA STORE & CONSTANTS
@@ -190,7 +193,7 @@ export default function Index() {
       try {
         setIsLoadingData(true);
         setSyncError("");
-        const response = await fetch('/api/transactions');
+        const response = await fetchWithAuth('/api/transactions');
         if (!response.ok) {
           throw new Error(`Failed to load transactions (${response.status})`);
         }
@@ -223,7 +226,7 @@ export default function Index() {
   }, []);
 
   const createTransaction = async (txn: TransactionCreateRequest) => {
-    const response = await fetch('/api/transactions', {
+    const response = await fetchWithAuth('/api/transactions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -242,12 +245,12 @@ export default function Index() {
   };
 
   const removeTransaction = async (id: string) => {
-    let response = await fetch(`/api/transactions/${id}`, {
+    let response = await fetchWithAuth(`/api/transactions/${id}`, {
       method: 'DELETE',
     });
 
     if (response.status === 404 || response.status === 405) {
-      response = await fetch(`/api/transactions?id=${encodeURIComponent(id)}`, {
+      response = await fetchWithAuth(`/api/transactions?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       });
     }
@@ -441,36 +444,71 @@ function LogTab({
   isLoadingData,
   syncError,
 }: any) {
+  const { toast } = useToast();
   const [form, setForm] = useState({ date: new Date().toISOString().split('T')[0], type: 'Revenue', amount: '', dept: '', project: '', customer: '', ctype: '', costt: '', owner: '', notes: '', business_unit: 'India', invoice_number: '', invoice_url: '' });
+  const [confirmDeleteTxn, setConfirmDeleteTxn] = useState<any | null>(null);
 
   let rows = [...data].sort((a,b)=>b.date.localeCompare(a.date));
   if (search) rows = rows.filter(r=>[r.date,r.type,r.dept,r.project,r.customer,r.owner,r.notes].join(' ').toLowerCase().includes(search.toLowerCase()));
   if (filterType) rows = rows.filter(r=>r.type===filterType);
 
-  const deleteRow = async (r: any) => {
-    if (!confirm('Remove this transaction?')) {
-      return;
-    }
+  const deleteRow = (r: any) => {
+    setConfirmDeleteTxn(r);
+  };
+
+  const executeDeleteRow = async () => {
+    if (!confirmDeleteTxn) return;
+    const r = confirmDeleteTxn;
+    setConfirmDeleteTxn(null);
 
     if (!r.id) {
-      alert('Unable to delete: missing transaction id');
+      toast({
+        title: "Delete Error",
+        description: "Unable to delete: missing transaction id",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
       await onDelete(r.id);
+      toast({
+        title: "Deleted",
+        description: "Transaction removed successfully.",
+        variant: "success",
+      });
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to delete transaction');
+      toast({
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : "Failed to delete transaction",
+        variant: "destructive",
+      });
     }
   };
 
   const handleAdd = async () => {
-    if (!form.amount || isNaN(Number(form.amount))) return alert("Valid amount required");
+    if (!form.amount || isNaN(Number(form.amount))) {
+      toast({
+        title: "Validation Error",
+        description: "Valid amount required",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       await onCreate({ ...form, amount: Number(form.amount), type: form.type as 'Revenue' | 'Expense', business_unit: form.business_unit || 'India', invoice_number: form.invoice_number || '', invoice_url: form.invoice_url || '' });
       setForm(f => ({ ...f, amount: '', notes: '', project: '', customer: '' }));
+      toast({
+        title: "Success",
+        description: "Transaction added successfully.",
+        variant: "success",
+      });
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to add transaction');
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "Failed to add transaction",
+        variant: "destructive",
+      });
     }
   };
 
@@ -531,6 +569,15 @@ function LogTab({
           </table>
         </div>
       </div>
+
+      <ConfirmDialog 
+        isOpen={!!confirmDeleteTxn}
+        title="Confirm Deletion"
+        message="Are you sure you want to remove this transaction record from the ledger?"
+        onConfirm={executeDeleteRow}
+        onCancel={() => setConfirmDeleteTxn(null)}
+        confirmText="Remove"
+      />
     </>
   );
 }

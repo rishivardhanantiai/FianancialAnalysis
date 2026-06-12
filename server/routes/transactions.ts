@@ -125,6 +125,17 @@ export const createTransaction: RequestHandler = async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
+    // Record audit log
+    const userEmail = req.headers["x-user-email"] as string || "system@antiaifinance.com";
+    const userRole = req.headers["x-user-role"] as string || "system";
+    await supabase.from("transaction_logs").insert({
+      action: "CREATE",
+      transaction_id: data.id,
+      details: data,
+      performed_by_email: userEmail,
+      performed_by_role: userRole,
+    });
+
     const response: TransactionCreateResponse = {
       transaction: mapRowToTransaction(data),
     };
@@ -150,10 +161,30 @@ export const deleteTransaction: RequestHandler = async (req, res) => {
 
   try {
     const supabase = getSupabaseAdminClient();
+    
+    // Fetch transaction details before delete to record in audit logs
+    const { data: txnToDelete } = await supabase
+      .from(TABLE_NAME)
+      .select("*")
+      .eq("id", id)
+      .single();
+
     const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
 
     if (error) {
       return res.status(500).json({ error: error.message });
+    }
+
+    if (txnToDelete) {
+      const userEmail = req.headers["x-user-email"] as string || "system@antiaifinance.com";
+      const userRole = req.headers["x-user-role"] as string || "system";
+      await supabase.from("transaction_logs").insert({
+        action: "DELETE",
+        transaction_id: id,
+        details: txnToDelete,
+        performed_by_email: userEmail,
+        performed_by_role: userRole,
+      });
     }
 
     return res.status(204).send();
@@ -220,6 +251,19 @@ export const createBulkTransactions: RequestHandler = async (req, res) => {
 
     if (error) {
       return res.status(500).json({ error: error.message });
+    }
+
+    if (data && data.length > 0) {
+      const userEmail = req.headers["x-user-email"] as string || "system@antiaifinance.com";
+      const userRole = req.headers["x-user-role"] as string || "system";
+      const logs = data.map((t: any) => ({
+        action: "BULK_CREATE",
+        transaction_id: t.id,
+        details: t,
+        performed_by_email: userEmail,
+        performed_by_role: userRole,
+      }));
+      await supabase.from("transaction_logs").insert(logs);
     }
 
     const response: TransactionsListResponse = {

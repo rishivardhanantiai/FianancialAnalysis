@@ -16,9 +16,12 @@ import Departments from "./pages/Departments";
 import Forecast from "./pages/Forecast";
 import NotFound from "./pages/NotFound";
 import ImportData from "./pages/ImportData";
-
-
 import GenerateInvoice from "./pages/GenerateInvoice"; 
+
+// --- Role-based components and guards ---
+import ProtectedRoute from "@/components/ProtectedRoute";
+import CAPortal from "./pages/CAPortal";
+import TeamManagement from "./pages/TeamManagement";
 
 const queryClient = new QueryClient();
 
@@ -31,18 +34,22 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Index />} />
-            <Route path="/log" element={<DailyLog />} />
-            <Route path="/analysis" element={<FinancialAnalysis />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/departments" element={<Departments />} />
-            <Route path="/forecast" element={<Forecast />} />
-            <Route path="/insights" element={<Index />} />
-            <Route path="/cashflow" element={<Index />} />
-            <Route path="/import" element={<ImportData />} />
             
-  
-            <Route path="/generate-invoice" element={<GenerateInvoice />} />
+            {/* Admin and Team Core Routes */}
+            <Route path="/" element={<ProtectedRoute allowedRoles={["admin", "team", "ca"]}><Index /></ProtectedRoute>} />
+            <Route path="/log" element={<ProtectedRoute allowedRoles={["admin", "team"]}><DailyLog /></ProtectedRoute>} />
+            <Route path="/analysis" element={<ProtectedRoute allowedRoles={["admin", "team", "ca"]}><FinancialAnalysis /></ProtectedRoute>} />
+            <Route path="/projects" element={<ProtectedRoute allowedRoles={["admin", "team", "ca"]}><Projects /></ProtectedRoute>} />
+            <Route path="/departments" element={<ProtectedRoute allowedRoles={["admin", "team", "ca"]}><Departments /></ProtectedRoute>} />
+            <Route path="/forecast" element={<ProtectedRoute allowedRoles={["admin", "team", "ca"]}><Forecast /></ProtectedRoute>} />
+            <Route path="/insights" element={<ProtectedRoute allowedRoles={["admin", "team", "ca"]}><Index /></ProtectedRoute>} />
+            <Route path="/cashflow" element={<ProtectedRoute allowedRoles={["admin", "team", "ca"]}><Index /></ProtectedRoute>} />
+            <Route path="/import" element={<ProtectedRoute allowedRoles={["admin", "team"]}><ImportData /></ProtectedRoute>} />
+            <Route path="/generate-invoice" element={<ProtectedRoute allowedRoles={["admin", "team"]}><GenerateInvoice /></ProtectedRoute>} />
+            <Route path="/team" element={<ProtectedRoute allowedRoles={["admin", "team"]}><TeamManagement /></ProtectedRoute>} />
+            
+            {/* CA Portal Route (viewable by CA and Admin) */}
+            <Route path="/ca-portal" element={<ProtectedRoute allowedRoles={["admin", "ca"]}><CAPortal /></ProtectedRoute>} />
             
             <Route path="*" element={<NotFound />} />
           </Routes>

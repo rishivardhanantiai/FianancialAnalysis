@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-
-function getStoredEmail(): string {
-  try {
-    const raw = localStorage.getItem("auth_credentials");
-    if (raw) return JSON.parse(raw).email ?? "";
-  } catch {}
-  return "";
-}
+import { 
+  ShieldAlert, 
+  Lock, 
+  Mail, 
+  ChevronRight,
+  Loader2,
+  Fingerprint
+} from "lucide-react";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -18,97 +18,191 @@ export default function Login() {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
 
-  // Pre-fill the email from stored credentials (password intentionally left blank for security)
-  useEffect(() => {
-    setEmail(getStoredEmail());
-  }, []);
-
   useEffect(() => {
     if (isAuthenticated) {
       navigate("/");
     }
   }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, customEmail?: string, customPassword?: string) => {
+    if (e) e.preventDefault();
     setError("");
     setIsLoading(true);
 
+    const finalEmail = (customEmail || email).trim();
+    const finalPassword = customPassword || password;
+
+    if (!finalEmail || !finalPassword) {
+      setError("Please enter both email and password.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await login(email, password);
+      await login(finalEmail, finalPassword);
       navigate("/");
-    } catch {
-      setError("Invalid email or password");
+    } catch (err: any) {
+      setError(err.message || "Invalid email or password");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleQuickLogin = (roleEmail: string, rolePass: string) => {
+    setEmail(roleEmail);
+    setPassword(rolePass);
+    handleSubmit(undefined, roleEmail, rolePass);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-navy via-background to-blue-pale flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Card */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-blue-pale">
-          {/* Header */}
-          <div className="mb-8 text-center">
-            <img
-              src="/logo.jpg"
-              alt="ANTI AI Logo"
-              className="w-24 h-24 object-contain mx-auto mb-4 rounded-full shadow-md"
-            />
-            <div className="text-sm text-blue-mid font-semibold uppercase tracking-wider">
-              Financial Command Center
+    <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans">
+      <style>{`
+        @keyframes reverse-spin {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+        .animate-reverse-spin {
+          animation: reverse-spin 15s linear infinite;
+        }
+      `}</style>
+      
+      {/* Animated Mesh Gradients */}
+      <div className="absolute top-[-40%] left-[-20%] w-[80%] h-[80%] rounded-full bg-blue-900/10 blur-[150px] animate-pulse" style={{ animationDuration: '8s' }} />
+      <div className="absolute bottom-[-40%] right-[-20%] w-[80%] h-[80%] rounded-full bg-indigo-900/10 blur-[150px] animate-pulse" style={{ animationDuration: '12s' }} />
+      
+      {/* Grid Pattern overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30 pointer-events-none" />
+
+      <div className="w-full max-w-md z-10 space-y-8">
+        
+        {/* Abstract Identity */}
+        <div className="text-center space-y-4">
+          <div className="mx-auto w-12 h-12 relative flex items-center justify-center">
+            {/* Concentric Geometric Rings */}
+            <div className="absolute inset-0 rounded-full border border-blue-500/20 animate-spin" style={{ animationDuration: '20s' }} />
+            <div className="absolute inset-1.5 rounded-full border border-indigo-500/30 animate-reverse-spin" />
+            <div className="absolute inset-3 rounded-full border border-blue-400/50 flex items-center justify-center">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-ping" />
             </div>
           </div>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-widest uppercase text-white bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent">
+              ANTI AI
+            </h1>
+            <p className="text-xs text-slate-500 font-semibold uppercase tracking-widest">
+              Financial Command Center
+            </p>
+          </div>
+        </div>
+
+        {/* Minimalist Login Card */}
+        <div className="bg-slate-900/30 border border-slate-900 rounded-3xl shadow-3xl backdrop-blur-2xl p-8 space-y-6">
+          
+          <h2 className="text-sm font-semibold text-slate-400 text-center tracking-wide">
+            Authenticate to proceed
+          </h2>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-navy uppercase tracking-wide mb-2">
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="w-full px-4 py-2 border border-blue-pale rounded-lg focus:outline-none focus:ring-2 focus:ring-navy bg-background"
-                disabled={isLoading}
-                autoComplete="email"
-                required
-              />
+            
+            {/* Email Input */}
+            <div className="space-y-1">
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-950/40 border border-slate-900 rounded-2xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition placeholder-slate-600 font-medium"
+                  disabled={isLoading}
+                  autoComplete="email"
+                  required
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-navy uppercase tracking-wide mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="w-full px-4 py-2 border border-blue-pale rounded-lg focus:outline-none focus:ring-2 focus:ring-navy bg-background"
-                disabled={isLoading}
-                autoComplete="current-password"
-                required
-              />
+            {/* Password Input */}
+            <div className="space-y-1">
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Secret key"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-950/40 border border-slate-900 rounded-2xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/50 focus:border-blue-500/50 transition placeholder-slate-600 font-medium"
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
             </div>
 
             {error && (
-              <div className="p-3 bg-danger-bg border border-danger-light rounded-lg text-xs text-danger font-semibold">
-                {error}
+              <div className="p-3.5 bg-red-500/5 border border-red-500/10 rounded-2xl text-xs text-red-400 font-medium flex items-center gap-2.5">
+                <ShieldAlert className="w-4 h-4 flex-shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-2 bg-navy hover:bg-navy-light text-white font-bold rounded-lg transition disabled:opacity-50"
+              className="w-full py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-bold text-sm rounded-2xl transition duration-300 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-white/5"
             >
-              {isLoading ? "Logging in..." : "Login"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-slate-900" />
+                  <span>Authorizing...</span>
+                </>
+              ) : (
+                <>
+                  <span>Unlock Workspace</span>
+                  <ChevronRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
+
+          {/* Quick-Access Pills */}
+          <div className="space-y-3 pt-4 border-t border-slate-900">
+            <div className="text-center">
+              <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                <Fingerprint className="w-3.5 h-3.5 text-blue-500/70" /> Quick-Access Keys
+              </span>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickLogin("admin@antiaifinance.com", "antiaifinance2024")}
+                className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
+              >
+                Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin("team@antiaifinance.com", "team2024")}
+                className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
+              >
+                Team
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin("ca@antiaifinance.com", "ca2024")}
+                className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
+              >
+                CA Auditor
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Abstract footer */}
+        <div className="text-center text-[10px] text-slate-700 font-bold uppercase tracking-widest">
+          Secured Session // MIS Compliance Registry
         </div>
       </div>
     </div>

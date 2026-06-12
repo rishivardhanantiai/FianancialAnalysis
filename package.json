@@ -22,8 +22,11 @@
     "express": "^5.1.0",
     "multer": "^2.1.1",
     "pdf2json": "^4.0.3",
+    "pdf2pic": "^3.2.0",
     "pdfjs-dist": "^5.6.205",
     "serverless-http": "^3.2.0",
+    "tesseract.js": "^7.0.0",
+    "vite-plugin-node-polyfills": "^0.28.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -64,7 +67,6 @@
     "@types/express": "^5.0.3",
     "@types/multer": "^2.1.0",
     "@types/node": "^24.2.1",
-    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@types/three": "^0.176.0",

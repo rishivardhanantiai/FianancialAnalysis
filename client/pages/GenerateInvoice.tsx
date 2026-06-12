@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { InvoiceTemplate } from '../components/InvoiceTemplate'; 
+import { fetchWithAuth } from "@/lib/api";
 import Layout from "@/components/Layout"; // 👉 1. IMPORTED THE LAYOUT COMPONENT
 import { Plus, Trash2, FileText, Loader2, Save } from 'lucide-react'; // Added Loader2 and Save icons
+import { useToast } from "@/hooks/use-toast";
 
 const GenerateInvoice = () => {
+  const { toast } = useToast();
   // 1. Form State
   const [invoiceNumber, setInvoiceNumber] = useState(`INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`);
   const [client, setClient] = useState({ name: '', email: '', address: '', tax_id: '' });
@@ -64,7 +67,7 @@ const GenerateInvoice = () => {
       const formData = new FormData();
       formData.append("invoice", file);
 
-      const uploadResponse = await fetch("/api/invoices/upload", {
+      const uploadResponse = await fetchWithAuth("/api/invoices/upload", {
         method: "POST",
         body: formData,
       });
@@ -75,7 +78,7 @@ const GenerateInvoice = () => {
       const pdfPath = uploadData.path; 
 
       console.log("3. Saving Invoice to Database...");
-      const saveResponse = await fetch("/api/invoices", {
+      const saveResponse = await fetchWithAuth("/api/invoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -90,7 +93,11 @@ const GenerateInvoice = () => {
 
       if (!saveResponse.ok) throw new Error("Failed to save the invoice record in the database.");
 
-      alert("✅ Invoice generated, uploaded, and saved successfully!");
+      toast({
+        title: "Success",
+        description: "Invoice generated, uploaded, and saved successfully!",
+        variant: "success",
+      });
       
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -107,7 +114,11 @@ const GenerateInvoice = () => {
       
     } catch (error) {
       console.error("Pipeline Error:", error);
-      alert("❌ Failed to complete the invoice generation process.");
+      toast({
+        title: "Generation Failed",
+        description: "Failed to complete the invoice generation process.",
+        variant: "destructive",
+      });
     } finally {
       setIsGenerating(false);
     }

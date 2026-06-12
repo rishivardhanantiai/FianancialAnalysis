@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { InvoiceUploadResponse } from "@shared/api";
+import { fetchWithAuth } from "@/lib/api";
 
 export function useInvoiceUpload() {
   const [uploading, setUploading] = useState(false);
@@ -13,7 +14,7 @@ export function useInvoiceUpload() {
     formData.append("invoice", file);
 
     try {
-      const response = await fetch("/api/invoices/upload", {
+      const response = await fetchWithAuth("/api/invoices/upload", {
         method: "POST",
         body: formData,
       });

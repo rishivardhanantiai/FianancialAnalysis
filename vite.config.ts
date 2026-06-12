@@ -2,6 +2,7 @@ import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
 import { createServer } from "./server";
+import { nodePolyfills } from "vite-plugin-node-polyfills"; // Added this import
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -16,7 +17,17 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist",
   },
-  plugins: [react(), expressPlugin()],
+  plugins: [
+    react(), 
+    expressPlugin(),
+    // Added the polyfill here to fix the Buffer error in production
+    nodePolyfills({
+      include: ["buffer"],
+      globals: {
+        Buffer: true,
+      },
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./client"),

@@ -52,21 +52,19 @@ export const handleUploadInvoice: RequestHandler = async (req, res) => {
 
 /**
  * Phase 1 - Bulk Download (.xlsx)
- * Fetches all invoices, generates 7-day signed URLs, and streams an Excel file directly.
- * Designed to prevent timeouts on large datasets.
+ * Fetches all invoices, generates 7-day signed URLs, and returns an Excel file buffer.
+ * Optimized to prevent corruption and timeouts on Serverless platforms.
  */
 export const handleBulkDownloadInvoices: RequestHandler = async (req, res) => {
   try {
     const supabase = getSupabaseAdminClient();
 
-    // 1. Fetch ALL transactions (Removed the 'not null' filter so you get your full MIS report)
+    // 1. Fetch ALL transactions
     const { data: transactions, error: dbError } = await supabase
       .from("transactions")
       .select("date, business_unit, type, invoice_number, amount, project, dept, customer, owner, invoice_url")
-      .order("date", { ascending: false }) // Primary sort: Newest dates at the top
-      .order("id", { ascending: false });  // Secondary sort: Most recently added at the top if dates match
-
-    if (dbError) throw dbError;
+      .order("date", { ascending: false })
+      .order("id", { ascending: false });
 
     if (dbError) throw dbError;
     if (!transactions || transactions.length === 0) {
@@ -81,7 +79,6 @@ export const handleBulkDownloadInvoices: RequestHandler = async (req, res) => {
     // 3. Generate Bulk Signed URLs (Valid for 7 Days)
     const urlMap = new Map();
     
-    // Only call Supabase if there is actually at least one valid invoice
     if (validPaths.length > 0) {
       const SEVEN_DAYS = 7 * 24 * 60 * 60;
       const { data: signedUrlsData, error: signError } = await supabase.storage
@@ -90,7 +87,6 @@ export const handleBulkDownloadInvoices: RequestHandler = async (req, res) => {
 
       if (signError) throw signError;
 
-      // Map the successful URLs
       signedUrlsData?.forEach(item => {
         if (!item.error) urlMap.set(item.path, item.signedUrl);
       });
@@ -118,7 +114,6 @@ export const handleBulkDownloadInvoices: RequestHandler = async (req, res) => {
 
     // 5. Populate Rows
     transactions.forEach(txn => {
-      // Check if this specific row has a valid URL in our Map
       const signedUrl = (txn.invoice_url && txn.invoice_url.trim() !== "") 
         ? urlMap.get(txn.invoice_url) 
         : null;
@@ -131,27 +126,32 @@ export const handleBulkDownloadInvoices: RequestHandler = async (req, res) => {
         amount: txn.amount,
         project: `${txn.project || ""} (${txn.dept || ""})`,
         customer: `${txn.customer || ""} (${txn.owner || ""})`,
-        // CHANGE APPLIED HERE:
         link: signedUrl ? "Click to View Document" : "Invoice hasn't been uploaded" 
       });
 
-      // Format the link column as a native Excel Hyperlink
       if (signedUrl) {
         const linkCell = row.getCell("link");
         linkCell.value = { text: "View Invoice", hyperlink: signedUrl };
-        linkCell.font = { color: { argb: "FF0563C1" }, underline: true }; // Blue link style
+        linkCell.font = { color: { argb: "FF0563C1" }, underline: true };
       } else {
-        // Optional: Make the "hasn't been uploaded" text gray/muted so the blue links stand out
         row.getCell("link").font = { color: { argb: "FF888888" }, italic: true };
       }
     });
-
-    // 6. Stream the file directly to the client
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-    res.setHeader("Content-Disposition", `attachment; filename="MIS_Invoices_${new Date().toISOString().split("T")[0]}.xlsx"`);
-
-    await workbook.xlsx.write(res);
-    res.end();
+// ==========================================
+    // 6. SERVERLESS SAFE COMPILATION & DELIVERY (BASE64)
+    // ==========================================
+    
+    // Compile entire sheet into a single buffer array first
+    const buffer = await workbook.xlsx.writeBuffer();
+    
+    // Convert the raw buffer into a safe Base64 string
+    const base64Data = buffer.toString("base64");
+    
+    // Send it as a standard JSON response so Netlify doesn't scramble it
+    return res.status(200).json({
+      fileName: `MIS_Invoices_${new Date().toISOString().split("T")[0]}.xlsx`,
+      fileData: base64Data
+    });
 
   } catch (error) {
     console.error("Export Error:", error);
@@ -190,10 +190,31 @@ export const handleGetInvoiceUrl: RequestHandler = async (req, res) => {
  */
 export const handleCreateInvoice: RequestHandler = async (req, res) => {
   try {
-    const { invoice_number, client_details, line_items, total_amount, status, invoice_url } = req.body;
+    // --- 🚨 DIAGNOSTIC LOGS: WE NEED TO SEE WHAT NETLIFY IS DOING 🚨 ---
+    console.log("==== DIAGNOSTIC LOGS START ====");
+    console.log("Content-Type Header:", req.headers['content-type']);
+    console.log("Type of req.body:", typeof req.body);
+    console.log("Raw req.body:", req.body);
+    console.log("==== DIAGNOSTIC LOGS END ====");
 
-    if (!invoice_number || total_amount === undefined) {
-      return res.status(400).json({ error: "Invoice number and total amount are required." });
+    // Fallback to empty object if Netlify stripped the body entirely
+    const body = req.body || {}; 
+
+    // Extract values with fallbacks
+    const final_invoice_number = body.invoice_number || body.invoiceNumber;
+    const final_total_amount = body.total_amount !== undefined ? body.total_amount : body.totalAmount;
+    const final_client_details = body.client_details || body.clientDetails;
+    const final_line_items = body.line_items || body.lineItems;
+    const final_invoice_url = body.invoice_url || body.invoiceUrl;
+    const final_status = body.status || 'Draft';
+
+    // Validation Guard
+    if (!final_invoice_number || final_total_amount === undefined) {
+      console.log("❌ VALIDATION FAILED! Missing data.");
+      return res.status(400).json({ 
+        error: "Invoice number and total amount are required.",
+        debug_received_body: body 
+      });
     }
 
     const supabase = getSupabaseAdminClient();
@@ -201,21 +222,25 @@ export const handleCreateInvoice: RequestHandler = async (req, res) => {
     const { data, error } = await supabase
       .from("invoices")
       .insert([{ 
-        invoice_number, 
-        client_details, 
-        line_items, 
-        total_amount, 
-        status: status || 'Draft', 
-        invoice_url 
+        invoice_number: final_invoice_number, 
+        client_details: final_client_details, 
+        line_items: final_line_items, 
+        total_amount: final_total_amount, 
+        status: final_status, 
+        invoice_url: final_invoice_url 
       }])
       .select("*")
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("❌ SUPABASE ERROR:", error);
+      throw error;
+    }
 
+    console.log("✅ INVOICE SAVED SUCCESSFULLY!");
     return res.status(201).json({ invoice: data });
   } catch (error) {
-    console.error("Create Invoice Error:", error);
+    console.error("Create Invoice Catch Error:", error);
     return res.status(500).json({ 
       error: error instanceof Error ? error.message : "Failed to create invoice" 
     });
