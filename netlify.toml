@@ -7,19 +7,11 @@
   NODE_VERSION = "20"
 
 [functions]
-  external_node_modules = [
-    "express",
-    "@netlify/functions",
-    "exceljs",
-    "pdf2json",
-    "pdf2pic",
-    "tesseract.js",
-    "sharp",
-    "canvas",
-    "multer",
-    "@supabase/supabase-js",
-    "serverless-http"
-  ]
+  # Let esbuild inline all dependencies directly into the function bundle.
+  # All server-side packages (express, supabase, multer, exceljs, pdf2json,
+  # serverless-http) are pure JS — esbuild handles them fine.
+  # external_node_modules is removed because pnpm's .pnpm virtual store
+  # breaks Netlify's ability to copy symlinked packages at deploy time.
   node_bundler = "esbuild"
 
 # API calls → Netlify Function
