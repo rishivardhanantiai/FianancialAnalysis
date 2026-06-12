@@ -1,10 +1,24 @@
 [build]
   command = "npm run build:client"
   functions = "netlify/functions"
-  publish = "dist"  
+  publish = "dist"
+
 [functions]
-external_node_modules = ["express"]
-node_bundler = "esbuild"
+  # "express" must be external for serverless-http to work correctly.
+  # "exceljs", "pdf2json", "pdf2pic", "tesseract.js" use native bindings /
+  # binary executables that do not exist in Netlify's Lambda environment.
+  # Marking them external prevents esbuild from bundling them and lets
+  # Netlify provision them from node_modules at runtime instead.
+  external_node_modules = [
+    "express",
+    "exceljs",
+    "pdf2json",
+    "pdf2pic",
+    "tesseract.js",
+    "sharp",
+    "canvas"
+  ]
+  node_bundler = "esbuild"
 
 # Your existing API redirect
 [[redirects]]
