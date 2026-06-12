@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRef } from "react";
 import { 
   ShieldAlert, 
   Lock, 
@@ -17,6 +18,14 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
+  const passwordRef = useRef<HTMLInputElement>(null);
+
+  const handleRoleSelect = (roleEmail: string) => {
+    setEmail(roleEmail);
+    setPassword("");
+    // Focus the password field so user must type their own secret
+    setTimeout(() => passwordRef.current?.focus(), 0);
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -24,13 +33,13 @@ export default function Login() {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleSubmit = async (e?: React.FormEvent, customEmail?: string, customPassword?: string) => {
-    if (e) e.preventDefault();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError("");
     setIsLoading(true);
 
-    const finalEmail = (customEmail || email).trim();
-    const finalPassword = customPassword || password;
+    const finalEmail = email.trim();
+    const finalPassword = password;
 
     if (!finalEmail || !finalPassword) {
       setError("Please enter both email and password.");
@@ -46,12 +55,6 @@ export default function Login() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleQuickLogin = (roleEmail: string, rolePass: string) => {
-    setEmail(roleEmail);
-    setPassword(rolePass);
-    handleSubmit(undefined, roleEmail, rolePass);
   };
 
   return (
@@ -127,6 +130,7 @@ export default function Login() {
               <div className="relative">
                 <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
                 <input
+                  ref={passwordRef}
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -165,32 +169,31 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Quick-Access Pills */}
+          {/* Role selector — fills email only, password always required */}
           <div className="space-y-3 pt-4 border-t border-slate-900">
             <div className="text-center">
               <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
-                <Fingerprint className="w-3.5 h-3.5 text-blue-500/70" /> Quick-Access Keys
+                <Fingerprint className="w-3.5 h-3.5 text-blue-500/70" /> Select Access Role
               </span>
             </div>
-
             <div className="flex flex-wrap justify-center gap-2">
               <button
                 type="button"
-                onClick={() => handleQuickLogin("admin@antiaifinance.com", "antiaifinance2024")}
+                onClick={() => handleRoleSelect("admin@antiaifinance.com")}
                 className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
               >
                 Admin
               </button>
               <button
                 type="button"
-                onClick={() => handleQuickLogin("team@antiaifinance.com", "team2024")}
+                onClick={() => handleRoleSelect("team@antiaifinance.com")}
                 className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
               >
                 Team
               </button>
               <button
                 type="button"
-                onClick={() => handleQuickLogin("ca@antiaifinance.com", "ca2024")}
+                onClick={() => handleRoleSelect("ca@antiaifinance.com")}
                 className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
               >
                 CA Auditor
