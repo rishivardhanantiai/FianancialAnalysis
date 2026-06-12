@@ -3,32 +3,34 @@
   functions = "netlify/functions"
   publish = "dist"
 
+[build.environment]
+  NODE_VERSION = "18"
+
 [functions]
-  # "express" must be external for serverless-http to work correctly.
-  # "exceljs", "pdf2json", "pdf2pic", "tesseract.js" use native bindings /
-  # binary executables that do not exist in Netlify's Lambda environment.
-  # Marking them external prevents esbuild from bundling them and lets
-  # Netlify provision them from node_modules at runtime instead.
   external_node_modules = [
     "express",
+    "@netlify/functions",
     "exceljs",
     "pdf2json",
     "pdf2pic",
     "tesseract.js",
     "sharp",
-    "canvas"
+    "canvas",
+    "multer",
+    "@supabase/supabase-js",
+    "serverless-http"
   ]
   node_bundler = "esbuild"
 
-# Your existing API redirect
+# API calls → Netlify Function
 [[redirects]]
-force = true
-from = "/api/*"
-status = 200
-to = "/.netlify/functions/api/:splat"
+  force = true
+  from = "/api/*"
+  status = 200
+  to = "/.netlify/functions/api/:splat"
 
-#  The SPA fallback redirect
+# SPA fallback
 [[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
+  from = "/*"
+  to = "/index.html"
+  status = 200
