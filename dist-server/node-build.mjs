@@ -3,13 +3,84 @@ import "dotenv/config";
 import * as express$1 from "express";
 import express, { Router } from "express";
 import cors from "cors";
+import * as crypto$1 from "crypto";
+import crypto from "crypto";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import multer from "multer";
 import path$1 from "path";
 import ExcelJS from "exceljs";
-import crypto from "crypto";
 import PDFParser from "pdf2json";
+//#region server/lib/session.ts
+/**
+* Server-side session token management.
+*
+* Generates and verifies HMAC-SHA256 signed session tokens so that
+* the server never trusts client-sent role/email/id headers.
+*
+* Token format:  base64url(payload).base64url(signature)
+* Payload:       JSON { id, email, role, iat, exp }
+*
+* The signing secret is derived from SUPABASE_SERVICE_ROLE_KEY which
+* is already a server-only secret that never reaches the frontend.
+*/
+var SESSION_TTL_SECONDS = 1440 * 60;
+function getSigningSecret() {
+	const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+	if (!key) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY for session signing");
+	return crypto.createHash("sha256").update(`session-sign:${key}`).digest("hex");
+}
+function base64UrlEncode(data) {
+	return Buffer.from(data, "utf-8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function base64UrlDecode(encoded) {
+	let base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
+	while (base64.length % 4 !== 0) base64 += "=";
+	return Buffer.from(base64, "base64").toString("utf-8");
+}
+function sign(payload, secret) {
+	return crypto.createHmac("sha256", secret).update(payload).digest("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+/**
+* Creates a signed session token for the authenticated user.
+* Called after successful login verification.
+*/
+function createSessionToken(user) {
+	const now = Math.floor(Date.now() / 1e3);
+	const payload = {
+		id: user.id,
+		email: user.email,
+		role: user.role,
+		name: user.name,
+		iat: now,
+		exp: now + SESSION_TTL_SECONDS
+	};
+	const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+	return `${encodedPayload}.${sign(encodedPayload, getSigningSecret())}`;
+}
+/**
+* Verifies a session token and returns the payload if valid.
+* Returns null if the token is invalid, expired, or tampered.
+*/
+function verifySessionToken(token) {
+	if (!token || typeof token !== "string") return null;
+	const parts = token.split(".");
+	if (parts.length !== 2) return null;
+	const [encodedPayload, providedSignature] = parts;
+	try {
+		const expectedSignature = sign(encodedPayload, getSigningSecret());
+		if (providedSignature.length !== expectedSignature.length || !crypto.timingSafeEqual(Buffer.from(providedSignature), Buffer.from(expectedSignature))) return null;
+		const payloadStr = base64UrlDecode(encodedPayload);
+		const payload = JSON.parse(payloadStr);
+		const now = Math.floor(Date.now() / 1e3);
+		if (payload.exp < now) return null;
+		if (!payload.id || !payload.email || !payload.role) return null;
+		return payload;
+	} catch {
+		return null;
+	}
+}
+//#endregion
 //#region server/routes/demo.ts
 var handleDemo = (req, res) => {
 	res.status(200).json({ message: "Hello from Express server" });
@@ -55,7 +126,7 @@ function getSupabaseAdminClient() {
 }
 //#endregion
 //#region server/routes/transactions.ts
-var TABLE_NAME = "transactions";
+var TABLE_NAME$1 = "transactions";
 function mapRowToTransaction(row) {
 	return {
 		id: row.id,
@@ -78,7 +149,7 @@ function mapRowToTransaction(row) {
 }
 var listTransactions = async (_req, res) => {
 	try {
-		const { data, error } = await getSupabaseAdminClient().from(TABLE_NAME).select("*").order("date", { ascending: false }).order("created_at", { ascending: false });
+		const { data, error } = await getSupabaseAdminClient().from(TABLE_NAME$1).select("*").order("date", { ascending: false }).order("created_at", { ascending: false });
 		if (error) return res.status(500).json({ error: error.message });
 		const response = { transactions: (data ?? []).map(mapRowToTransaction) };
 		return res.status(200).json(response);
@@ -130,8 +201,18 @@ var createTransaction = async (req, res) => {
 		linked_invoice_id: validation.data.linked_invoice_id ?? null
 	};
 	try {
-		const { data, error } = await getSupabaseAdminClient().from(TABLE_NAME).insert(payload).select("*").single();
+		const supabase = getSupabaseAdminClient();
+		const { data, error } = await supabase.from(TABLE_NAME$1).insert(payload).select("*").single();
 		if (error) return res.status(500).json({ error: error.message });
+		const userEmail = req.headers["x-user-email"] || "system@antiaifinance.com";
+		const userRole = req.headers["x-user-role"] || "system";
+		await supabase.from("transaction_logs").insert({
+			action: "CREATE",
+			transaction_id: data.id,
+			details: data,
+			performed_by_email: userEmail,
+			performed_by_role: userRole
+		});
 		const response = { transaction: mapRowToTransaction(data) };
 		return res.status(201).json(response);
 	} catch (error) {
@@ -144,8 +225,21 @@ var deleteTransaction = async (req, res) => {
 	const id = req.params.id ?? queryId;
 	if (!id) return res.status(400).json({ error: "Transaction id is required" });
 	try {
-		const { error } = await getSupabaseAdminClient().from(TABLE_NAME).delete().eq("id", id);
+		const supabase = getSupabaseAdminClient();
+		const { data: txnToDelete } = await supabase.from(TABLE_NAME$1).select("*").eq("id", id).single();
+		const { error } = await supabase.from(TABLE_NAME$1).delete().eq("id", id);
 		if (error) return res.status(500).json({ error: error.message });
+		if (txnToDelete) {
+			const userEmail = req.headers["x-user-email"] || "system@antiaifinance.com";
+			const userRole = req.headers["x-user-role"] || "system";
+			await supabase.from("transaction_logs").insert({
+				action: "DELETE",
+				transaction_id: id,
+				details: txnToDelete,
+				performed_by_email: userEmail,
+				performed_by_role: userRole
+			});
+		}
 		return res.status(204).send();
 	} catch (error) {
 		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to delete transaction" });
@@ -183,8 +277,21 @@ var createBulkTransactions = async (req, res) => {
 		details: validationErrors
 	});
 	try {
-		const { data, error } = await getSupabaseAdminClient().from(TABLE_NAME).insert(validPayloads).select("*");
+		const supabase = getSupabaseAdminClient();
+		const { data, error } = await supabase.from(TABLE_NAME$1).insert(validPayloads).select("*");
 		if (error) return res.status(500).json({ error: error.message });
+		if (data && data.length > 0) {
+			const userEmail = req.headers["x-user-email"] || "system@antiaifinance.com";
+			const userRole = req.headers["x-user-role"] || "system";
+			const logs = data.map((t) => ({
+				action: "BULK_CREATE",
+				transaction_id: t.id,
+				details: t,
+				performed_by_email: userEmail,
+				performed_by_role: userRole
+			}));
+			await supabase.from("transaction_logs").insert(logs);
+		}
 		const response = { transactions: (data ?? []).map(mapRowToTransaction) };
 		return res.status(201).json(response);
 	} catch (error) {
@@ -218,14 +325,13 @@ var handleUploadInvoice = async (req, res) => {
 };
 /**
 * Phase 1 - Bulk Download (.xlsx)
-* Fetches all invoices, generates 7-day signed URLs, and streams an Excel file directly.
-* Designed to prevent timeouts on large datasets.
+* Fetches all invoices, generates 7-day signed URLs, and returns an Excel file buffer.
+* Optimized to prevent corruption and timeouts on Serverless platforms.
 */
 var handleBulkDownloadInvoices = async (req, res) => {
 	try {
 		const supabase = getSupabaseAdminClient();
 		const { data: transactions, error: dbError } = await supabase.from("transactions").select("date, business_unit, type, invoice_number, amount, project, dept, customer, owner, invoice_url").order("date", { ascending: false }).order("id", { ascending: false });
-		if (dbError) throw dbError;
 		if (dbError) throw dbError;
 		if (!transactions || transactions.length === 0) return res.status(404).json({ error: "No records found to export." });
 		const validPaths = transactions.map((t) => t.invoice_url).filter((path) => path && path.trim() !== "");
@@ -314,10 +420,12 @@ var handleBulkDownloadInvoices = async (req, res) => {
 				italic: true
 			};
 		});
-		res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-		res.setHeader("Content-Disposition", `attachment; filename="MIS_Invoices_${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.xlsx"`);
-		await workbook.xlsx.write(res);
-		res.end();
+		const buffer = await workbook.xlsx.writeBuffer();
+		const base64Data = Buffer.from(buffer).toString("base64");
+		return res.status(200).json({
+			fileName: `MIS_Invoices_${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.xlsx`,
+			fileData: base64Data
+		});
 	} catch (error) {
 		console.error("Export Error:", error);
 		res.status(500).json({ error: "Failed to generate Excel export" });
@@ -340,20 +448,29 @@ var handleGetInvoiceUrl = async (req, res) => {
 */
 var handleCreateInvoice = async (req, res) => {
 	try {
-		const { invoice_number, client_details, line_items, total_amount, status, invoice_url } = req.body;
-		if (!invoice_number || total_amount === void 0) return res.status(400).json({ error: "Invoice number and total amount are required." });
+		const body = req.body || {};
+		const final_invoice_number = body.invoice_number || body.invoiceNumber;
+		const final_total_amount = body.total_amount !== void 0 ? body.total_amount : body.totalAmount;
+		const final_client_details = body.client_details || body.clientDetails;
+		const final_line_items = body.line_items || body.lineItems;
+		const final_invoice_url = body.invoice_url || body.invoiceUrl;
+		const final_status = body.status || "Draft";
+		if (!final_invoice_number || final_total_amount === void 0) return res.status(400).json({ error: "Invoice number and total amount are required." });
 		const { data, error } = await getSupabaseAdminClient().from("invoices").insert([{
-			invoice_number,
-			client_details,
-			line_items,
-			total_amount,
-			status: status || "Draft",
-			invoice_url
+			invoice_number: final_invoice_number,
+			client_details: final_client_details,
+			line_items: final_line_items,
+			total_amount: final_total_amount,
+			status: final_status,
+			invoice_url: final_invoice_url
 		}]).select("*").single();
-		if (error) throw error;
+		if (error) {
+			console.error("Create invoice DB error:", error.message);
+			throw error;
+		}
 		return res.status(201).json({ invoice: data });
 	} catch (error) {
-		console.error("Create Invoice Error:", error);
+		console.error("Create Invoice Catch Error:", error);
 		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create invoice" });
 	}
 };
@@ -421,53 +538,44 @@ var MONTHS = {
 	DEC: 12,
 	DECEMBER: 12
 };
-var HDFC_COLUMNS = {
-	date: {
-		min: 0,
-		max: 4.15
-	},
-	narration: {
-		min: 4.15,
-		max: 17.7
-	},
-	withdrawal: {
-		min: 25.05,
-		max: 30.35
-	},
-	deposit: {
-		min: 30.35,
-		max: 35.15
-	},
-	balance: {
-		min: 35.15,
-		max: Number.POSITIVE_INFINITY
-	}
-};
 var NOISE_PATTERNS = [
-	/PAGE\s+NO/i,
-	/ACCOUNT\s+BRANCH/i,
-	/ACCOUNT\s+STATUS/i,
-	/A\/C\s+OPEN\s+DATE/i,
-	/STATEMENT\s+OF\s+ACCOUNT/i,
-	/STATEMENT\s+SUMMARY/i,
-	/OPENING\s+BALANCE/i,
-	/CLOSING\s+BAL/i,
-	/CLOSING\s+BALANCE\s+INCLUDES/i,
+	/^PAGE\s+NO/i,
+	/^ACCOUNT\s+BRANCH/i,
+	/^ACCOUNT\s+STATUS/i,
+	/^A\/C\s+OPEN\s+DATE/i,
+	/^STATEMENT\s+OF\s+ACCOUNT/i,
+	/^STATEMENT\s+SUMMARY/i,
+	/^OPENING\s+BALANCE/i,
+	/^CLOSING\s+BAL/i,
+	/^CLOSING\s+BALANCE\s+INCLUDES/i,
 	/CONTENTS\s+OF\s+THIS\s+STATEMENT/i,
-	/REGISTERED\s+OFFICE/i,
-	/HDFC\s+BANK\s+LIMITED/i,
+	/^REGISTERED\s+OFFICE/i,
+	/^HDFC\s+BANK\s+LIMITED/i,
 	/FUNDS\s+EARMARKED/i,
 	/STATE\s+ACCOUNT\s+BRANCH\s+GSTN/i,
 	/GSTIN\s+NUMBER/i,
 	/HTTPS?:\/\//i,
-	/GENERATED\s+ON/i,
-	/GENERATED\s+BY/i,
-	/REQUESTING\s+BRANCH/i,
+	/^GENERATED\s+ON/i,
+	/^GENERATED\s+BY/i,
+	/^REQUESTING\s+BRANCH/i,
 	/COMPUTER\s+GENERATED\s+STATEMENT/i,
 	/NOT\s+REQUIRE\s+SIGNATURE/i,
 	/\bDATE\b.*\bNARRATION\b/i,
 	/\bTXN\s+DATE\b.*\bBALANCE\b/i,
-	/\bVALUE\s+DATE\b.*\bBALANCE\b/i
+	/\bVALUE\s+DATE\b.*\bBALANCE\b/i,
+	/^ACCOUNT\s+NAME/i,
+	/^DRAWING\s+POWER/i,
+	/^INTEREST\s+RATE/i,
+	/^MOD\s+BALANCE/i,
+	/^CIF\s+NO/i,
+	/^IFS\s+CODE/i,
+	/^MICR\s+CODE/i,
+	/^NOMINATION\s+REGISTERED/i,
+	/^BALANCE\s+AS\s+ON/i,
+	/^ACCOUNT\s+STATEMENT\s+FROM/i,
+	/^\bADDRESS\b/i,
+	/^\bACCOUNT\s+NUMBER\b/i,
+	/^\bACCOUNT\s+DESCRIPTION\b/i
 ];
 patchPdf2JsonWarnings();
 function patchPdf2JsonWarnings() {
@@ -534,23 +642,20 @@ function groupItemsIntoRows(items, tolerance) {
 	return rows;
 }
 function itemsInRange(row, range) {
-	return row.items.filter((item) => item.x >= range.min && item.x < range.max);
+	return row.items.filter((item) => item.x >= range.min && item.x <= range.max);
 }
 function joinNarrationItems(items) {
-	return normalizeWhitespace(items.map((item) => item.text).join(" ")).replace(/\s*-\s*/g, " - ").replace(/\s*\/\s*/g, "/").replace(/\s+([,.])/g, "$1").replace(/\s{2,}/g, " ").trim();
-}
-function joinCompact(items) {
-	return items.map((item) => item.text).join("");
+	return normalizeWhitespace(items.filter((item) => !/^[\d,]+\.\d{2}$/.test(item.text)).map((item) => item.text).join(" ")).replace(/\s*-\s*/g, " - ").replace(/\s*\/\s*/g, "/").replace(/\s+([,.])/g, "$1").replace(/\s{2,}/g, " ").trim();
 }
 function toIsoDate(day, month, rawYear) {
 	let yearText = rawYear.replace(/\D/g, "");
 	if (yearText.length === 3) yearText = yearText.slice(0, 2);
 	let year = Number(yearText);
 	if (yearText.length <= 2) year += 2e3;
-	if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year) || day < 1 || day > 31 || month < 1 || month > 12 || year < 1990 || year > 2099) return null;
-	const date = new Date(Date.UTC(year, month - 1, day));
-	if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
-	return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+	if (!Number.isInteger(day) || !Number.isInteger(month) || !Number.isInteger(year) || day < 1 || month < 1 || month > 12 || year < 1990 || year > 2099) return null;
+	const maxDays = new Date(year, month, 0).getDate();
+	const safeDay = Math.min(day, maxDays);
+	return `${year}-${String(month).padStart(2, "0")}-${String(safeDay).padStart(2, "0")}`;
 }
 function parseDateFromText(raw) {
 	if (!raw) return null;
@@ -564,24 +669,28 @@ function parseDateFromText(raw) {
 	}
 	return null;
 }
-function parseDateFromItems(items) {
-	return parseDateFromText(joinCompact(items)) ?? parseDateFromText(rowText(items));
-}
 function parseAmountText(raw) {
 	if (!raw) return null;
-	const matches = raw.replace(/(?:INR|RS\.?|₹)/gi, "").replace(/\s+/g, "").replace(/[()]/g, "").replace(/CR|DR/gi, "").match(/-?\d[\d,]*(?:\.\d{1,2})?/g);
+	const matches = raw.replace(/(?:INR|RS\.?|₹|CR|DR)/gi, "").replace(/[()]/g, "").match(/-?[\d,.]+\.\d{1,2}(?!\d)/g);
 	if (!matches?.length) return null;
-	const candidate = matches.filter((match) => match.includes(".")).at(-1) ?? matches.at(-1);
-	if (!candidate) return null;
-	const value = Number(candidate.replace(/,/g, ""));
+	let numStr = matches[matches.length - 1].replace(/,/g, "");
+	const lastDot = numStr.lastIndexOf(".");
+	if (lastDot !== -1) numStr = numStr.substring(0, lastDot).replace(/\./g, "") + numStr.substring(lastDot);
+	const value = Number(numStr);
 	if (!Number.isFinite(value)) return null;
 	return Math.abs(Number(value.toFixed(2)));
 }
-function parseAmountFromItems(items) {
-	return parseAmountText(joinCompact(items)) ?? parseAmountText(rowText(items));
-}
 function getColumnAmount(row, range) {
-	return parseAmountFromItems(itemsInRange(row, range));
+	return parseAmountText(rowText(itemsInRange(row, range)));
+}
+function itemsInRightEdgeRange(row, range) {
+	return row.items.filter((item) => {
+		const rightEdge = item.x + item.text.length * .45;
+		return rightEdge >= range.min && rightEdge <= range.max;
+	});
+}
+function getHdfcColumnAmount(row, range) {
+	return parseAmountText(rowText(itemsInRightEdgeRange(row, range)));
 }
 function roundAmount(value) {
 	return Math.round((value + Number.EPSILON) * 100) / 100;
@@ -589,6 +698,7 @@ function roundAmount(value) {
 function isNoiseRow(row) {
 	const text = row.text.trim();
 	if (!text) return true;
+	if (/^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}/.test(text)) return false;
 	return NOISE_PATTERNS.some((pattern) => pattern.test(text));
 }
 function cleanDescription(notes) {
@@ -627,43 +737,116 @@ function sanitizePartyName(value) {
 function normalizeFinalNotes(notes) {
 	return cleanDescription(notes) || "Bank transaction";
 }
-function startsLikelyContinuation(row, narrationRange) {
-	if (isNoiseRow(row)) return false;
-	if (itemsInRange(row, narrationRange).length === 0) return false;
-	if ((row.text.match(/\d[\d,]*\.\d{1,2}/g)?.length ?? 0) >= 2) return false;
-	return !(/OPENING|CLOSING|DEBITS|CREDITS|COUNT|TOTAL/i.test(row.text) && /\d[\d,]*\.\d{1,2}/.test(row.text));
+function findHdfcColumns(rows) {
+	const header = rows.find((row) => {
+		const text = row.text.toUpperCase();
+		return /WITHDRAWAL/.test(text) && /DEPOSIT/.test(text) && /BALANCE/.test(text);
+	});
+	let dateEnd = 4.5;
+	let narrationEnd = 20;
+	let withdrawalStart = 26.5;
+	let depositStart = 31.7;
+	let balanceStart = 36.75;
+	if (header) {
+		const anchors = header.items.map((item) => ({
+			x: item.x,
+			text: item.text.toUpperCase()
+		}));
+		const xFor = (patterns, fallback) => anchors.find((anchor) => patterns.some((pattern) => pattern.test(anchor.text)))?.x ?? fallback;
+		const dateX = xFor([/^DATE/], 0);
+		const valDtX = xFor([/VALUE/], 21);
+		const withX = xFor([/WITHDRAWAL/], 25.05);
+		const depX = xFor([/DEPOSIT/], 30.35);
+		const balX = xFor([/BALANCE/, /CLOSING/], 35.15);
+		dateEnd = dateX + 5;
+		const vRightTarget = valDtX + 3;
+		const wRightTarget = withX + 4;
+		const dRightTarget = depX + 4;
+		const bRightTarget = balX + 4;
+		withdrawalStart = (vRightTarget + wRightTarget) / 2;
+		depositStart = (wRightTarget + dRightTarget) / 2;
+		balanceStart = (dRightTarget + bRightTarget) / 2;
+		narrationEnd = withdrawalStart;
+	}
+	return {
+		dateEnd,
+		narration: {
+			min: dateEnd,
+			max: narrationEnd
+		},
+		debit: {
+			min: withdrawalStart,
+			max: depositStart
+		},
+		credit: {
+			min: depositStart,
+			max: balanceStart
+		},
+		balance: {
+			min: balanceStart,
+			max: Number.POSITIVE_INFINITY
+		}
+	};
 }
 function parseHdfcRows(rows) {
+	const columns = findHdfcColumns(rows);
 	const drafts = [];
-	let current = null;
+	let currentTx = null;
 	const flush = () => {
-		if (!current) return;
-		current.notes = normalizeFinalNotes(current.notes);
-		drafts.push(current);
-		current = null;
+		if (!currentTx) return;
+		let amount = 0;
+		let type = "Expense";
+		if (currentTx._w !== null && currentTx._w !== void 0) {
+			amount = currentTx._w;
+			type = "Expense";
+		} else if (currentTx._d !== null && currentTx._d !== void 0) {
+			amount = currentTx._d;
+			type = "Revenue";
+		}
+		if (amount > 0) {
+			currentTx.amount = roundAmount(amount);
+			currentTx.type = type;
+			currentTx.notes = normalizeFinalNotes(currentTx.notes);
+			if (currentTx._b !== null && currentTx._b !== void 0) currentTx.balance = currentTx._b;
+			drafts.push(currentTx);
+		}
+		currentTx = null;
 	};
 	for (const row of rows) {
-		const date = parseDateFromItems(itemsInRange(row, HDFC_COLUMNS.date));
-		const withdrawal = getColumnAmount(row, HDFC_COLUMNS.withdrawal);
-		const deposit = getColumnAmount(row, HDFC_COLUMNS.deposit);
-		const balance = getColumnAmount(row, HDFC_COLUMNS.balance);
-		if (date && (withdrawal !== null || deposit !== null) && balance !== null) {
+		if (isNoiseRow(row)) continue;
+		const rowDate = parseDateFromText(rowText(itemsInRange(row, {
+			min: 0,
+			max: columns.dateEnd
+		})));
+		if (rowDate) {
 			flush();
-			const type = withdrawal !== null ? "Expense" : "Revenue";
-			const amount = withdrawal ?? deposit ?? 0;
-			const notes = joinNarrationItems(itemsInRange(row, HDFC_COLUMNS.narration));
-			current = {
-				date,
-				amount: roundAmount(amount),
-				type,
-				notes,
-				balance
+			currentTx = {
+				date: rowDate,
+				amount: 0,
+				type: "Expense",
+				notes: "",
+				_w: null,
+				_d: null,
+				_b: null
 			};
-			continue;
 		}
-		if (current && startsLikelyContinuation(row, HDFC_COLUMNS.narration)) {
-			const continuation = joinNarrationItems(itemsInRange(row, HDFC_COLUMNS.narration));
-			if (continuation) current.notes = normalizeWhitespace(`${current.notes} ${continuation}`);
+		if (!currentTx) continue;
+		const narrationItems = itemsInRange(row, columns.narration);
+		if (narrationItems.length > 0) {
+			const narrationPart = joinNarrationItems(narrationItems);
+			if (narrationPart) currentTx.notes = currentTx.notes ? `${currentTx.notes} ${narrationPart}` : narrationPart;
+		}
+		if (columns.debit && currentTx._w === null) {
+			const w = getHdfcColumnAmount(row, columns.debit);
+			if (w !== null) currentTx._w = w;
+		}
+		if (columns.credit && currentTx._d === null) {
+			const d = getHdfcColumnAmount(row, columns.credit);
+			if (d !== null) currentTx._d = d;
+		}
+		if (columns.balance) {
+			const b = getHdfcColumnAmount(row, columns.balance);
+			if (b !== null) currentTx._b = b;
 		}
 	}
 	flush();
@@ -674,7 +857,7 @@ function amountLikeGroups(row) {
 	let current = [];
 	const push = () => {
 		if (!current.length) return;
-		const raw = joinCompact(current);
+		const raw = rowText(current);
 		const value = parseAmountText(raw);
 		const isDate = parseDateFromText(raw) !== null;
 		if (value !== null && !isDate) groups.push({
@@ -731,6 +914,12 @@ function findGenericColumns(rows) {
 		/DESCRIPTION/,
 		/REMARK/
 	], 6);
+	const refX = xFor([
+		/REF\b/,
+		/CHQ/,
+		/CHEQUE/,
+		/REF\s+NO/
+	], -1);
 	const debitX = xFor([
 		/DEBIT/,
 		/WITHDRAWAL/,
@@ -744,14 +933,20 @@ function findGenericColumns(rows) {
 	const balanceX = xFor([/BALANCE/, /CLOSING/], 36);
 	const debitCreditMid = (debitX + creditX) / 2;
 	const creditBalanceMid = (creditX + balanceX) / 2;
+	let narrationEnd = (narrationX + debitX) / 2;
+	let debitStart = narrationEnd;
+	if (refX !== -1) {
+		narrationEnd = (narrationX + refX) / 2;
+		debitStart = (refX + debitX) / 2;
+	}
 	return {
 		dateEnd: Math.max(4, (dateX + narrationX) / 2),
 		narration: {
 			min: Math.max(0, (dateX + narrationX) / 2),
-			max: Math.max(narrationX + 2, (narrationX + debitX) / 2)
+			max: Math.max(narrationX + 2, narrationEnd)
 		},
 		debit: {
-			min: Math.max(0, (narrationX + debitX) / 2),
+			min: Math.max(debitStart - 2, debitStart),
 			max: debitCreditMid
 		},
 		credit: {
@@ -763,6 +958,17 @@ function findGenericColumns(rows) {
 			max: Number.POSITIVE_INFINITY
 		}
 	};
+}
+function startsLikelyContinuation(row, narrationRange) {
+	if (isNoiseRow(row)) return false;
+	if (itemsInRange(row, narrationRange).length === 0) return false;
+	if ((row.text.match(/\d[\d,]*\.\d{1,2}/g)?.length ?? 0) >= 2) return false;
+	return !(/OPENING|CLOSING|DEBITS|CREDITS|COUNT|TOTAL/i.test(row.text) && /\d[\d,]*\.\d{1,2}/.test(row.text));
+}
+function inferTypeFromNarration(text) {
+	const upper = text.toUpperCase();
+	if (/\b(CR|CREDIT|DEPOSIT|TRANSFER\s+IN|BY\s+TRANSFER|REFUND|INTEREST\s+PAID)\b/.test(upper)) return "Revenue";
+	return "Expense";
 }
 function parseGenericLedgerRows(rows) {
 	const columns = findGenericColumns(rows);
@@ -776,7 +982,7 @@ function parseGenericLedgerRows(rows) {
 		current = null;
 	};
 	for (const row of rows) {
-		const date = parseDateFromItems(row.items.filter((item) => item.x < columns.dateEnd));
+		const date = parseDateFromText(rowText(row.items.filter((item) => item.x < columns.dateEnd)));
 		const debit = columns.debit ? getColumnAmount(row, columns.debit) : null;
 		const credit = columns.credit ? getColumnAmount(row, columns.credit) : null;
 		const balance = columns.balance ? getColumnAmount(row, columns.balance) : null;
@@ -829,11 +1035,6 @@ function parseGenericLedgerRows(rows) {
 	flush();
 	return drafts;
 }
-function inferTypeFromNarration(text) {
-	const upper = text.toUpperCase();
-	if (/\b(CR|CREDIT|DEPOSIT|TRANSFER\s+IN|BY\s+TRANSFER|REFUND|INTEREST\s+PAID)\b/.test(upper)) return "Revenue";
-	return "Expense";
-}
 function parseStatementSummary(fullText) {
 	const text = fullText.replace(/\s+/g, " ");
 	const drMatch = text.match(/\bDR\s+COUNT\s+(\d+)/i);
@@ -851,48 +1052,13 @@ function warnIfSummaryMismatch(engineName, fullText, transactions) {
 	const creditCount = transactions.filter((tx) => tx.type === "Revenue").length;
 	if (summary.debitCount !== null && summary.debitCount !== debitCount || summary.creditCount !== null && summary.creditCount !== creditCount) console.warn(`[Statement Parser] ${engineName} summary mismatch. Expected Dr ${summary.debitCount ?? "?"}, Cr ${summary.creditCount ?? "?"}; parsed Dr ${debitCount}, Cr ${creditCount}.`);
 }
-async function performOCRExtraction(fileBuffer) {
-	try {
-		const formData = new FormData();
-		const blob = new Blob([fileBuffer], { type: "application/pdf" });
-		formData.append("file", blob, "statement.pdf");
-		formData.append("apikey", process.env.OCR_SPACE_API_KEY || "helloworld");
-		formData.append("isOverlayRequired", "true");
-		formData.append("language", "eng");
-		formData.append("scale", "true");
-		const data = await (await fetch("https://api.ocr.space/parse/image", {
-			method: "POST",
-			body: formData
-		})).json();
-		if (data.IsErroredOnProcessing) throw new Error(`Cloud OCR failed: ${data.ErrorMessage?.[0] ?? "Unknown error"}`);
-		const items = [];
-		(data.ParsedResults ?? []).forEach((result, pageIndex) => {
-			(result.TextOverlay?.Lines ?? []).forEach((line) => {
-				(line.Words ?? []).forEach((word) => {
-					const text = String(word.WordText ?? "").trim();
-					if (!text) return;
-					items.push({
-						text,
-						x: Number(word.Left ?? 0),
-						y: Number(word.Top ?? 0),
-						page: pageIndex + 1
-					});
-				});
-			});
-		});
-		return groupItemsIntoRows(items, 6);
-	} catch (error) {
-		console.error("[Statement Parser OCR Error]", error);
-		return [];
-	}
-}
 function extractPdfRows(fileBuffer) {
 	return new Promise((resolve, reject) => {
 		const parser = new PDFParser();
 		parser.on("pdfParser_dataError", (errData) => {
 			reject(/* @__PURE__ */ new Error(`Failed to parse PDF data: ${errData.parserError}`));
 		});
-		parser.on("pdfParser_dataReady", async (pdfData) => {
+		parser.on("pdfParser_dataReady", (pdfData) => {
 			try {
 				const pages = pdfData.formImage?.Pages || pdfData.Pages || [];
 				const items = [];
@@ -900,19 +1066,18 @@ function extractPdfRows(fileBuffer) {
 					(page.Texts || []).forEach((textItem) => {
 						const text = decodePdfText(textItem.R?.[0]?.T ?? "").trim();
 						if (!text) return;
-						items.push({
-							text,
-							x: Number(textItem.x ?? 0),
-							y: Number(textItem.y ?? 0),
-							page: pageIndex + 1
+						text.split(/\r?\n/).forEach((lineText, idx) => {
+							if (!lineText.trim()) return;
+							items.push({
+								text: lineText.trim(),
+								x: Number(textItem.x ?? 0),
+								y: Number(textItem.y ?? 0) + idx * .4,
+								page: pageIndex + 1
+							});
 						});
 					});
 				});
-				if (items.length < 50) {
-					resolve(await performOCRExtraction(fileBuffer));
-					return;
-				}
-				resolve(groupItemsIntoRows(items, .58));
+				resolve(groupItemsIntoRows(items, .3));
 			} catch (error) {
 				reject(error);
 			}
@@ -962,7 +1127,7 @@ function determineParsingEngine(documentText) {
 }
 function hydrateTransaction(tx) {
 	return {
-		id: crypto.randomUUID(),
+		id: crypto$1.randomUUID(),
 		date: tx.date,
 		amount: roundAmount(tx.amount),
 		type: tx.type,
@@ -1002,29 +1167,403 @@ router.post("/", upload.single("statement"), async (req, res) => {
 	}
 });
 //#endregion
+//#region server/routes/auth.ts
+var handleLogin = async (req, res) => {
+	const { email, password } = req.body;
+	if (!email || !password) return res.status(400).json({ error: "Email and password are required" });
+	const cleanEmail = email.trim().toLowerCase();
+	try {
+		const { data, error } = await getSupabaseAdminClient().rpc("verify_user", {
+			p_email: cleanEmail,
+			p_password: password
+		});
+		if (error) {
+			console.error("Login verify_user RPC error:", error);
+			return res.status(500).json({ error: "Database error during validation" });
+		}
+		if (!data || data.length === 0) return res.status(401).json({ error: "Invalid email or password" });
+		const dbUser = data[0];
+		const user = {
+			id: dbUser.id,
+			name: dbUser.name,
+			email: dbUser.email,
+			role: dbUser.role
+		};
+		const token = createSessionToken(user);
+		return res.status(200).json({
+			user,
+			token
+		});
+	} catch (error) {
+		console.error("Unexpected login error:", error);
+		return res.status(500).json({ error: error instanceof Error ? error.message : "Internal login server error" });
+	}
+};
+var handleChangePassword = async (req, res) => {
+	const { currentPassword, newPassword } = req.body;
+	const sessionUser = req._sessionUser;
+	if (!sessionUser) return res.status(401).json({ error: "Unauthorized. Valid session required." });
+	if (!currentPassword || !newPassword) return res.status(400).json({ error: "Current and new password are required" });
+	if (sessionUser.id.startsWith("local-")) return res.status(200).json({ message: "Password updated successfully (Local session)" });
+	try {
+		const { data: isSuccess, error } = await getSupabaseAdminClient().rpc("change_user_password", {
+			p_user_id: sessionUser.id,
+			p_current_password: currentPassword,
+			p_new_password: newPassword
+		});
+		if (error) {
+			console.error("Change password RPC error:", error);
+			return res.status(500).json({ error: "Database error during password change" });
+		}
+		if (!isSuccess) return res.status(400).json({ error: "Current password is incorrect" });
+		return res.status(200).json({ message: "Password updated successfully" });
+	} catch (error) {
+		console.error("Unexpected change password error:", error);
+		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to change password" });
+	}
+};
+//#endregion
+//#region server/routes/users.ts
+var TABLE_NAME = "users";
+var listUsers = async (req, res) => {
+	if (req.headers["x-user-role"] === "ca") return res.status(403).json({ error: "Forbidden. CA users cannot view team members." });
+	try {
+		const { data, error } = await getSupabaseAdminClient().from(TABLE_NAME).select("id, name, email, role, created_at").order("created_at", { ascending: true });
+		if (error) {
+			console.error("List users error:", error);
+			return res.status(500).json({ error: error.message });
+		}
+		return res.status(200).json({ users: data ?? [] });
+	} catch (error) {
+		console.error("Unexpected list users error:", error);
+		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to list team members" });
+	}
+};
+var createUser = async (req, res) => {
+	const { email, password, name, role } = req.body;
+	if (req.headers["x-user-role"] !== "admin") return res.status(403).json({ error: "Forbidden. Only Admins can add team members." });
+	if (!email || !password || !name || !role) return res.status(400).json({ error: "Name, email, password, and role are required." });
+	if (![
+		"admin",
+		"team",
+		"ca"
+	].includes(role)) return res.status(400).json({ error: "Invalid role. Role must be admin, team, or ca." });
+	try {
+		const { data: newUserId, error } = await getSupabaseAdminClient().rpc("create_user", {
+			p_email: email.trim(),
+			p_password: password,
+			p_name: name.trim(),
+			p_role: role
+		});
+		if (error) {
+			console.error("Create user RPC error:", error);
+			if (error.message.includes("unique") || error.code === "23505") return res.status(400).json({ error: "A user with this email already exists." });
+			return res.status(500).json({ error: error.message });
+		}
+		return res.status(201).json({
+			message: "User created successfully",
+			user: {
+				id: newUserId,
+				email: email.trim(),
+				name: name.trim(),
+				role
+			}
+		});
+	} catch (error) {
+		console.error("Unexpected create user error:", error);
+		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to create team member" });
+	}
+};
+var deleteUser = async (req, res) => {
+	const { id } = req.params;
+	const userRole = req.headers["x-user-role"];
+	const userEmail = req.headers["x-user-email"];
+	if (userRole !== "admin") return res.status(403).json({ error: "Forbidden. Only Admins can delete team members." });
+	if (!id) return res.status(400).json({ error: "User ID is required." });
+	try {
+		const supabase = getSupabaseAdminClient();
+		const { data: targetUser, error: fetchError } = await supabase.from(TABLE_NAME).select("email").eq("id", id).single();
+		if (fetchError) {
+			console.error("Fetch target user for delete error:", fetchError);
+			return res.status(404).json({ error: "User not found." });
+		}
+		if (targetUser && targetUser.email.toLowerCase() === userEmail.toLowerCase()) return res.status(400).json({ error: "You cannot delete your own logged-in account." });
+		const { error } = await supabase.from(TABLE_NAME).delete().eq("id", id);
+		if (error) {
+			console.error("Delete user error:", error);
+			return res.status(500).json({ error: error.message });
+		}
+		return res.status(200).json({ message: "User deleted successfully." });
+	} catch (error) {
+		console.error("Unexpected delete user error:", error);
+		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to delete team member" });
+	}
+};
+var updateUser = async (req, res) => {
+	const { id } = req.params;
+	const { name, email, role, password } = req.body;
+	if (req.headers["x-user-role"] !== "admin") return res.status(403).json({ error: "Forbidden. Only Admins can modify team members." });
+	if (!id || !name || !email || !role) return res.status(400).json({ error: "Name, email, and role are required." });
+	if (![
+		"admin",
+		"team",
+		"ca"
+	].includes(role)) return res.status(400).json({ error: "Invalid role. Role must be admin, team, or ca." });
+	try {
+		const { data: isSuccess, error } = await getSupabaseAdminClient().rpc("admin_update_user", {
+			p_user_id: id,
+			p_name: name.trim(),
+			p_email: email.trim(),
+			p_role: role,
+			p_password: password && password.trim() !== "" ? password : null
+		});
+		if (error) {
+			console.error("Update user RPC error:", error);
+			if (error.message.includes("unique") || error.code === "23505") return res.status(400).json({ error: "A user with this email already exists." });
+			return res.status(500).json({ error: error.message });
+		}
+		return res.status(200).json({ message: "User updated successfully" });
+	} catch (error) {
+		console.error("Unexpected update user error:", error);
+		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to update team member" });
+	}
+};
+//#endregion
+//#region server/routes/logs.ts
+var escapeCSV = (val) => {
+	if (val === null || val === void 0) return "";
+	let str = String(val);
+	str = str.replace(/"/g, "\"\"");
+	if (str.includes(",") || str.includes("\"") || str.includes("\n") || str.includes("\r")) return `"${str}"`;
+	return str;
+};
+var listLogs = async (req, res) => {
+	const userRole = req.headers["x-user-role"];
+	try {
+		const { data, error } = await getSupabaseAdminClient().from("transaction_logs").select("*").order("created_at", { ascending: false });
+		if (error) {
+			console.error("List logs error:", error);
+			return res.status(500).json({ error: error.message });
+		}
+		const processedLogs = (data ?? []).map((log) => {
+			const isCA = userRole === "ca";
+			return {
+				id: log.id,
+				action: log.action,
+				transaction_id: log.transaction_id,
+				details: log.details,
+				performed_by_email: isCA ? `[Masked (${log.performed_by_role})]` : log.performed_by_email,
+				performed_by_role: log.performed_by_role,
+				created_at: log.created_at
+			};
+		});
+		return res.status(200).json({ logs: processedLogs });
+	} catch (error) {
+		console.error("Unexpected list logs error:", error);
+		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to load audit logs" });
+	}
+};
+var exportTransactionsCSV = async (req, res) => {
+	try {
+		const { data: transactions, error } = await getSupabaseAdminClient().from("transactions").select("*").order("date", { ascending: false });
+		if (error) {
+			console.error("Export transactions db error:", error);
+			return res.status(500).json({ error: error.message });
+		}
+		let csvContent = [
+			"ID",
+			"Date",
+			"Type",
+			"Amount",
+			"Business Unit (BU)",
+			"Department",
+			"Project",
+			"Customer",
+			"Customer Type",
+			"Cost Type",
+			"Owner",
+			"Invoice Number",
+			"Notes",
+			"Created At"
+		].join(",") + "\n";
+		(transactions ?? []).forEach((t) => {
+			const row = [
+				t.id,
+				t.date,
+				t.type,
+				t.amount,
+				t.business_unit || "",
+				t.dept || "",
+				t.project || "",
+				t.customer || "",
+				t.ctype || "",
+				t.costt || "",
+				t.owner || "",
+				t.invoice_number || "",
+				t.notes || "",
+				t.created_at
+			];
+			csvContent += row.map(escapeCSV).join(",") + "\n";
+		});
+		const fileName = `MIS_Ledger_${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.csv`;
+		res.setHeader("Content-Type", "text/csv");
+		res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+		return res.status(200).send(csvContent);
+	} catch (error) {
+		console.error("Unexpected export transactions error:", error);
+		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to export transactions" });
+	}
+};
+var exportLogsCSV = async (req, res) => {
+	const isCA = req.headers["x-user-role"] === "ca";
+	try {
+		const { data: logs, error } = await getSupabaseAdminClient().from("transaction_logs").select("*").order("created_at", { ascending: false });
+		if (error) {
+			console.error("Export logs db error:", error);
+			return res.status(500).json({ error: error.message });
+		}
+		let csvContent = [
+			"Log ID",
+			"Timestamp",
+			"Action Type",
+			"Transaction ID",
+			"Amount (₹)",
+			"Transaction Type",
+			"Project",
+			"Dept/BU",
+			"Performed By (Email)",
+			"Performed By (Role)"
+		].join(",") + "\n";
+		(logs ?? []).forEach((log) => {
+			const details = log.details || {};
+			const amount = details.amount !== void 0 ? details.amount : "";
+			const type = details.type || "";
+			const project = details.project || "";
+			const dept = details.dept || details.business_unit || "";
+			const email = isCA ? `[Masked (${log.performed_by_role})]` : log.performed_by_email;
+			const row = [
+				log.id,
+				log.created_at,
+				log.action,
+				log.transaction_id || "",
+				amount,
+				type,
+				project,
+				dept,
+				email,
+				log.performed_by_role
+			];
+			csvContent += row.map(escapeCSV).join(",") + "\n";
+		});
+		const fileName = `Audit_Logs_${(/* @__PURE__ */ new Date()).toISOString().split("T")[0]}.csv`;
+		res.setHeader("Content-Type", "text/csv");
+		res.setHeader("Content-Disposition", `attachment; filename=${fileName}`);
+		return res.status(200).send(csvContent);
+	} catch (error) {
+		console.error("Unexpected export logs error:", error);
+		return res.status(500).json({ error: error instanceof Error ? error.message : "Failed to export audit logs" });
+	}
+};
+//#endregion
 //#region server/index.ts
 function createServer() {
 	const app = express();
 	app.use(cors());
 	app.use(express.json());
 	app.use(express.urlencoded({ extended: true }));
-	app.use("/api/import", router);
+	app.use((req, res, next) => {
+		if (req.body) {
+			if (Buffer.isBuffer(req.body)) try {
+				req.body = JSON.parse(req.body.toString("utf-8"));
+			} catch (err) {}
+			else if (typeof req.body === "string") try {
+				req.body = JSON.parse(req.body);
+			} catch (err) {}
+		}
+		next();
+	});
+	const authenticateRequest = (req, _res, next) => {
+		const authHeader = req.headers["authorization"];
+		if (authHeader && authHeader.startsWith("Bearer ")) {
+			const payload = verifySessionToken(authHeader.slice(7));
+			if (payload) req._sessionUser = payload;
+		}
+		next();
+	};
+	app.use(authenticateRequest);
+	const requireRole = (allowedRoles) => {
+		return (req, res, next) => {
+			const user = req._sessionUser;
+			if (!user) return res.status(401).json({ error: "Unauthorized. Valid session token required." });
+			if (!allowedRoles.includes(user.role)) return res.status(403).json({ error: `Forbidden. Role '${user.role}' does not have permission.` });
+			req.headers["x-user-role"] = user.role;
+			req.headers["x-user-email"] = user.email;
+			req.headers["x-user-id"] = user.id;
+			next();
+		};
+	};
+	app.post("/api/auth/login", handleLogin);
+	app.post("/api/auth/change-password", requireRole([
+		"admin",
+		"team",
+		"ca"
+	]), handleChangePassword);
+	app.get("/api/users", requireRole(["admin", "team"]), listUsers);
+	app.post("/api/users", requireRole(["admin"]), createUser);
+	app.put("/api/users/:id", requireRole(["admin"]), updateUser);
+	app.delete("/api/users/:id", requireRole(["admin"]), deleteUser);
+	app.get("/api/logs", requireRole([
+		"admin",
+		"team",
+		"ca"
+	]), listLogs);
+	app.get("/api/exports/transactions", requireRole([
+		"admin",
+		"team",
+		"ca"
+	]), exportTransactionsCSV);
+	app.get("/api/exports/logs", requireRole([
+		"admin",
+		"team",
+		"ca"
+	]), exportLogsCSV);
+	app.use("/api/import", requireRole(["admin", "team"]), router);
 	app.get(["/api/ping", "/ping"], (_req, res) => {
 		const ping = process.env.PING_MESSAGE ?? "ping";
 		res.json({ message: ping });
 	});
 	app.get(["/api/demo", "/demo"], handleDemo);
-	app.get(["/api/transactions", "/transactions"], listTransactions);
-	app.post(["/api/transactions", "/transactions"], createTransaction);
-	app.delete(["/api/transactions", "/transactions"], deleteTransaction);
-	app.delete(["/api/transactions/:id", "/transactions/:id"], deleteTransaction);
-	app.post(["/api/transactions/bulk", "/transactions/bulk"], createBulkTransactions);
-	app.post("/api/invoices/upload", uploadMiddleware, handleUploadInvoice);
-	app.get("/api/invoices/download", handleBulkDownloadInvoices);
-	app.get("/api/invoices/url", handleGetInvoiceUrl);
-	app.post("/api/invoices", handleCreateInvoice);
-	app.get("/api/invoices/lookup/:invoiceNumber", handleLookupInvoice);
-	app.get("/api/invoices", handleListInvoices);
+	app.get(["/api/transactions", "/transactions"], requireRole([
+		"admin",
+		"team",
+		"ca"
+	]), listTransactions);
+	app.post(["/api/transactions", "/transactions"], requireRole(["admin", "team"]), createTransaction);
+	app.delete(["/api/transactions", "/transactions"], requireRole(["admin", "team"]), deleteTransaction);
+	app.delete(["/api/transactions/:id", "/transactions/:id"], requireRole(["admin", "team"]), deleteTransaction);
+	app.post(["/api/transactions/bulk", "/transactions/bulk"], requireRole(["admin", "team"]), createBulkTransactions);
+	app.post("/api/invoices/upload", requireRole(["admin", "team"]), uploadMiddleware, handleUploadInvoice);
+	app.get("/api/invoices/download", requireRole([
+		"admin",
+		"team",
+		"ca"
+	]), handleBulkDownloadInvoices);
+	app.get("/api/invoices/url", requireRole([
+		"admin",
+		"team",
+		"ca"
+	]), handleGetInvoiceUrl);
+	app.post("/api/invoices", requireRole(["admin", "team"]), handleCreateInvoice);
+	app.get("/api/invoices/lookup/:invoiceNumber", requireRole([
+		"admin",
+		"team",
+		"ca"
+	]), handleLookupInvoice);
+	app.get("/api/invoices", requireRole([
+		"admin",
+		"team",
+		"ca"
+	]), handleListInvoices);
 	return app;
 }
 //#endregion

@@ -1,37 +1,48 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useRef } from "react";
-import { 
-  ShieldAlert, 
-  Lock, 
-  Mail, 
+import {
+  ShieldAlert,
+  Lock,
+  Mail,
   ChevronRight,
   Loader2,
-  Fingerprint
+  Fingerprint,
 } from "lucide-react";
+
+type RoleOption = {
+  label: string;
+  email: string;
+};
+
+const ROLE_OPTIONS: RoleOption[] = [
+  { label: "Admin", email: "admin@antiaifinance.com" },
+  { label: "Team", email: "team@antiaifinance.com" },
+  { label: "CA Auditor", email: "ca@antiaifinance.com" },
+];
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
   const passwordRef = useRef<HTMLInputElement>(null);
-
-  const handleRoleSelect = (roleEmail: string) => {
-    setEmail(roleEmail);
-    setPassword("");
-    // Focus the password field so user must type their own secret
-    setTimeout(() => passwordRef.current?.focus(), 0);
-  };
 
   useEffect(() => {
     if (isAuthenticated) {
       navigate("/");
     }
   }, [isAuthenticated, navigate]);
+
+  const handleRoleSelect = (roleEmail: string) => {
+    setEmail(roleEmail);
+    setPassword("");
+    setError("");
+    setTimeout(() => passwordRef.current?.focus(), 0);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +62,7 @@ export default function Login() {
       await login(finalEmail, finalPassword);
       navigate("/");
     } catch (err: any) {
-      setError(err.message || "Invalid email or password");
+      setError(err?.message || "Invalid email or password");
     } finally {
       setIsLoading(false);
     }
@@ -68,21 +79,15 @@ export default function Login() {
           animation: reverse-spin 15s linear infinite;
         }
       `}</style>
-      
-      {/* Animated Mesh Gradients */}
-      <div className="absolute top-[-40%] left-[-20%] w-[80%] h-[80%] rounded-full bg-blue-900/10 blur-[150px] animate-pulse" style={{ animationDuration: '8s' }} />
-      <div className="absolute bottom-[-40%] right-[-20%] w-[80%] h-[80%] rounded-full bg-indigo-900/10 blur-[150px] animate-pulse" style={{ animationDuration: '12s' }} />
-      
-      {/* Grid Pattern overlay */}
+
+      <div className="absolute top-[-40%] left-[-20%] w-[80%] h-[80%] rounded-full bg-blue-900/10 blur-[150px] animate-pulse" style={{ animationDuration: "8s" }} />
+      <div className="absolute bottom-[-40%] right-[-20%] w-[80%] h-[80%] rounded-full bg-indigo-900/10 blur-[150px] animate-pulse" style={{ animationDuration: "12s" }} />
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30 pointer-events-none" />
 
       <div className="w-full max-w-md z-10 space-y-8">
-        
-        {/* Abstract Identity */}
         <div className="text-center space-y-4">
           <div className="mx-auto w-12 h-12 relative flex items-center justify-center">
-            {/* Concentric Geometric Rings */}
-            <div className="absolute inset-0 rounded-full border border-blue-500/20 animate-spin" style={{ animationDuration: '20s' }} />
+            <div className="absolute inset-0 rounded-full border border-blue-500/20 animate-spin" style={{ animationDuration: "20s" }} />
             <div className="absolute inset-1.5 rounded-full border border-indigo-500/30 animate-reverse-spin" />
             <div className="absolute inset-3 rounded-full border border-blue-400/50 flex items-center justify-center">
               <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-ping" />
@@ -98,17 +103,12 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Minimalist Login Card */}
         <div className="bg-slate-900/30 border border-slate-900 rounded-3xl shadow-3xl backdrop-blur-2xl p-8 space-y-6">
-          
           <h2 className="text-sm font-semibold text-slate-400 text-center tracking-wide">
             Authenticate to proceed
           </h2>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* Email Input */}
             <div className="space-y-1">
               <div className="relative">
                 <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
@@ -125,7 +125,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Password Input */}
             <div className="space-y-1">
               <div className="relative">
                 <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
@@ -169,41 +168,28 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Role selector — fills email only, password always required */}
           <div className="space-y-3 pt-4 border-t border-slate-900">
             <div className="text-center">
               <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
                 <Fingerprint className="w-3.5 h-3.5 text-blue-500/70" /> Select Access Role
               </span>
             </div>
+
             <div className="flex flex-wrap justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleRoleSelect("admin@antiaifinance.com")}
-                className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
-              >
-                Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRoleSelect("team@antiaifinance.com")}
-                className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
-              >
-                Team
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRoleSelect("ca@antiaifinance.com")}
-                className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
-              >
-                CA Auditor
-              </button>
+              {ROLE_OPTIONS.map((role) => (
+                <button
+                  key={role.email}
+                  type="button"
+                  onClick={() => handleRoleSelect(role.email)}
+                  className="px-3 py-1.5 bg-slate-950/30 hover:bg-slate-950 border border-slate-900 hover:border-blue-500/30 rounded-full text-xs font-bold text-slate-400 hover:text-white transition duration-200"
+                >
+                  {role.label}
+                </button>
+              ))}
             </div>
           </div>
-
         </div>
 
-        {/* Abstract footer */}
         <div className="text-center text-[10px] text-slate-700 font-bold uppercase tracking-widest">
           Secured Session // MIS Compliance Registry
         </div>

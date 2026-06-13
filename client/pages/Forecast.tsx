@@ -6,10 +6,11 @@ import {
 } from "recharts";
 import { useTransactions } from "@/hooks/useTransactions";
 import {
-  generateForecast, buildMonthlyTotals, formatMonthLabel,
+  generateForecast, buildMonthlyTotals, formatMonthLabel,addMonths,
   getCurrentMonth, alphasValid, DEFAULT_REVENUE_ALPHAS, DEFAULT_EXPENSE_ALPHAS,
   type AlphaTriplet,
 } from "@/lib/forecastEngine";
+
 
 function formatCurrency(n: number) {
   if (n >= 100000) return "₹" + (n / 100000).toFixed(2) + "L";

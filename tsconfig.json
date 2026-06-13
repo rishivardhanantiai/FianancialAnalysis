@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+
+    "jsx": "react-jsx",
+
+    "useDefineForClassFields": true,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
+
+    "resolveJsonModule": true,
+
+    "isolatedModules": true,
+    "moduleDetection": "force",
+
+    "noEmit": true,
+
+    "strict": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./client/*"],
+      "@shared/*": ["./shared/*"]
+    },
+
+    "types": ["node", "vite/client"]
+  },
+
+  "include": [
+    "client/**/*",
+    "server/**/*",
+    "shared/**/*",
+    "api/**/*",
+    "netlify/**/*",
+    "vite.config.ts",
+    "vite.config.server.ts",
+    "tailwind.config.ts"
+  ],
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-server"
+  ]
+}

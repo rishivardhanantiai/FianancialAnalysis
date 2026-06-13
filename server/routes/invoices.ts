@@ -145,7 +145,7 @@ export const handleBulkDownloadInvoices: RequestHandler = async (req, res) => {
     const buffer = await workbook.xlsx.writeBuffer();
     
     // Convert the raw buffer into a safe Base64 string
-    const base64Data = buffer.toString("base64");
+    const base64Data = Buffer.from(buffer).toString("base64");
     
     // Send it as a standard JSON response so Netlify doesn't scramble it
     return res.status(200).json({
@@ -190,14 +190,7 @@ export const handleGetInvoiceUrl: RequestHandler = async (req, res) => {
  */
 export const handleCreateInvoice: RequestHandler = async (req, res) => {
   try {
-    // --- 🚨 DIAGNOSTIC LOGS: WE NEED TO SEE WHAT NETLIFY IS DOING 🚨 ---
-    console.log("==== DIAGNOSTIC LOGS START ====");
-    console.log("Content-Type Header:", req.headers['content-type']);
-    console.log("Type of req.body:", typeof req.body);
-    console.log("Raw req.body:", req.body);
-    console.log("==== DIAGNOSTIC LOGS END ====");
-
-    // Fallback to empty object if Netlify stripped the body entirely
+    // Fallback to empty object if serverless stripped the body entirely
     const body = req.body || {}; 
 
     // Extract values with fallbacks
@@ -210,10 +203,8 @@ export const handleCreateInvoice: RequestHandler = async (req, res) => {
 
     // Validation Guard
     if (!final_invoice_number || final_total_amount === undefined) {
-      console.log("❌ VALIDATION FAILED! Missing data.");
       return res.status(400).json({ 
-        error: "Invoice number and total amount are required.",
-        debug_received_body: body 
+        error: "Invoice number and total amount are required."
       });
     }
 
@@ -233,11 +224,10 @@ export const handleCreateInvoice: RequestHandler = async (req, res) => {
       .single();
 
     if (error) {
-      console.error("❌ SUPABASE ERROR:", error);
+      console.error("Create invoice DB error:", error.message);
       throw error;
     }
 
-    console.log("✅ INVOICE SAVED SUCCESSFULLY!");
     return res.status(201).json({ invoice: data });
   } catch (error) {
     console.error("Create Invoice Catch Error:", error);

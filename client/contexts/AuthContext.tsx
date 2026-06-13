@@ -16,25 +16,7 @@ interface AuthContextType {
 }
 
 const AUTH_STORAGE_KEY = "auth_user";
-const CREDS_STORAGE_KEY = "auth_credentials";
-
-// Default credentials — written to localStorage on first load only.
-// After that, the user can change them via the app. Never stored in source code again.
-const DEFAULT_EMAIL = "admin@antiaifinance.com";
-const DEFAULT_PASSWORD = "antiaifinance2024";
-
-function getStoredCredentials(): { email: string; password: string } {
-  try {
-    const raw = localStorage.getItem(CREDS_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    // ignore parse errors
-  }
-  // First run — seed defaults into localStorage
-  const defaults = { email: DEFAULT_EMAIL, password: DEFAULT_PASSWORD };
-  localStorage.setItem(CREDS_STORAGE_KEY, JSON.stringify(defaults));
-  return defaults;
-}
+const TOKEN_STORAGE_KEY = "auth_token";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -57,13 +39,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const data = await res.json();
     const loggedInUser: User = data.user;
+    const token: string = data.token;
+
     setUser(loggedInUser);
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(loggedInUser));
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
   };
 
   const changePassword = async (
@@ -90,11 +76,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Restore session on mount
   React.useEffect(() => {
     const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (storedUser) {
+    const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (storedUser && storedToken) {
       try {
         setUser(JSON.parse(storedUser));
       } catch {
         localStorage.removeItem(AUTH_STORAGE_KEY);
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
       }
     }
   }, []);

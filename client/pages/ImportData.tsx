@@ -314,7 +314,7 @@ export default function ImportData() {
               <button onClick={handleAddManualRow} className="px-3 py-1.5 text-xs text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition font-semibold flex items-center gap-1 shadow-sm">
                 <Plus size={14}/> Add Manual
               </button>
-              <button onClick={handleClearGrid} className="px-3 py-1.5 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg hover:bg-rose-100 transition font-semibold shadow-sm">
+              <button onClick={() => handleClearGrid()} className="px-3 py-1.5 text-xs text-rose-600 bg-rose-50 border border-rose-100 rounded-lg hover:bg-rose-100 transition font-semibold shadow-sm">
                 Discard All
               </button>
               <button 

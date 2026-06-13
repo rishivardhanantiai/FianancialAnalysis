@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { getSupabaseAdminClient } from "../lib/supabase";
+import { createSessionToken } from "../lib/session";
 
 export const handleLogin: RequestHandler = async (req, res) => {
   const { email, password } = req.body;
@@ -10,27 +11,29 @@ export const handleLogin: RequestHandler = async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
 
-  // --- ROBUST LOCAL FALLBACK CREDENTIALS ---
-  // Guarantees immediate authentication even if Supabase is offline or migrations aren't run.
-  const MOCK_CREDENTIALS: Record<string, { name: string; role: string; pass: string }> = {
-    "admin@antiaifinance.com": { name: "ANTI AI Admin", role: "admin", pass: "antiaifinance2024" },
-    "team@antiaifinance.com": { name: "ANTI AI Team Member", role: "team", pass: "team2024" },
-    "ca@antiaifinance.com": { name: "ANTI AI CA Auditor", role: "ca", pass: "ca2024" }
-  };
+  // --- LOCAL FALLBACK CREDENTIALS (dev/demo only) ---
+  // In production, set NODE_ENV=production on your hosting platform to disable these.
+  if (process.env.NODE_ENV !== "production") {
+    const MOCK_CREDENTIALS: Record<string, { name: string; role: string; pass: string }> = {
+      "admin@antiaifinance.com": { name: "ANTI AI Admin", role: "admin", pass: "antiaifinance2024" },
+      "team@antiaifinance.com": { name: "ANTI AI Team Member", role: "team", pass: "team2024" },
+      "ca@antiaifinance.com": { name: "ANTI AI CA Auditor", role: "ca", pass: "ca2024" }
+    };
 
-  const mockUser = MOCK_CREDENTIALS[cleanEmail];
-  if (mockUser && mockUser.pass === password) {
-    return res.status(200).json({
-      user: {
+    const mockUser = MOCK_CREDENTIALS[cleanEmail];
+    if (mockUser && mockUser.pass === password) {
+      const user = {
         id: `local-${cleanEmail.split("@")[0]}`,
         name: mockUser.name,
         email: cleanEmail,
         role: mockUser.role,
-      }
-    });
+      };
+      const token = createSessionToken(user);
+      return res.status(200).json({ user, token });
+    }
   }
 
-  // --- DATABASE FALLBACK ---
+  // --- DATABASE AUTHENTICATION ---
   try {
     const supabase = getSupabaseAdminClient();
     
@@ -57,7 +60,8 @@ export const handleLogin: RequestHandler = async (req, res) => {
       role: dbUser.role,
     };
 
-    return res.status(200).json({ user });
+    const token = createSessionToken(user);
+    return res.status(200).json({ user, token });
   } catch (error) {
     console.error("Unexpected login error:", error);
     return res.status(500).json({
@@ -68,19 +72,19 @@ export const handleLogin: RequestHandler = async (req, res) => {
 
 export const handleChangePassword: RequestHandler = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  const userId = req.headers["x-user-id"] as string;
+
+  // Extract user from verified session token (set by authenticateRequest middleware)
+  const sessionUser = (req as any)._sessionUser;
+  if (!sessionUser) {
+    return res.status(401).json({ error: "Unauthorized. Valid session required." });
+  }
 
   if (!currentPassword || !newPassword) {
     return res.status(400).json({ error: "Current and new password are required" });
   }
 
-  if (!userId) {
-    return res.status(401).json({ error: "Unauthorized. Missing user ID header." });
-  }
-
-  // Handle mock passwords change locally if it's a mock user
-  if (userId.startsWith("local-")) {
-    // Return mock success to allow easy validation
+  // Handle mock users (only in non-production)
+  if (sessionUser.id.startsWith("local-")) {
     return res.status(200).json({ message: "Password updated successfully (Local session)" });
   }
 
@@ -89,7 +93,7 @@ export const handleChangePassword: RequestHandler = async (req, res) => {
 
     // Call change_user_password RPC in Supabase
     const { data: isSuccess, error } = await supabase.rpc("change_user_password", {
-      p_user_id: userId,
+      p_user_id: sessionUser.id,
       p_current_password: currentPassword,
       p_new_password: newPassword,
     });

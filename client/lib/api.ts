@@ -1,26 +1,16 @@
 /**
- * Custom fetch wrapper that automatically appends auth headers based on
- * the active session stored in localStorage under 'auth_user'.
+ * Custom fetch wrapper that automatically appends the signed session
+ * token from localStorage as an Authorization Bearer header.
+ *
+ * The server verifies this token server-side to extract the user's
+ * identity and role — the client never sends raw role strings.
  */
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-  const storedUser = localStorage.getItem("auth_user");
+  const token = localStorage.getItem("auth_token");
   const headers = new Headers(options.headers);
   
-  if (storedUser) {
-    try {
-      const user = JSON.parse(storedUser);
-      if (user.role) {
-        headers.set("x-user-role", user.role);
-      }
-      if (user.email) {
-        headers.set("x-user-email", user.email);
-      }
-      if (user.id) {
-        headers.set("x-user-id", user.id);
-      }
-    } catch (e) {
-      console.error("Error parsing auth user from storage", e);
-    }
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
   
   return fetch(url, {

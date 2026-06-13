@@ -11,7 +11,8 @@
     "seed:transactions": "tsx scripts/seed-transactions.ts",
     "test": "vitest --run",
     "format.fix": "prettier --write .",
-    "typecheck": "tsc"
+    "typecheck": "tsc --noEmit",
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@react-pdf/renderer": "^4.5.1",
