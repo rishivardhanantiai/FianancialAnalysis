@@ -9,9 +9,7 @@
  * All /api/* requests are routed here via vercel.json rewrites.
  */
 import serverless from "serverless-http";
-import { createServer } from "../server/index";
+import { createServer } from "../server/index.js";
 
 const app = createServer();
-const handler = serverless(app);
-
-export default handler;
+export default serverless(app);
