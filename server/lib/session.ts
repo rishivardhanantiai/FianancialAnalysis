@@ -10,6 +10,7 @@
  * The signing secret is derived from SUPABASE_SERVICE_ROLE_KEY which
  * is already a server-only secret that never reaches the frontend.
  */
+console.log("SESSION LOADED");
 import crypto from "crypto";
 
 interface SessionPayload {
