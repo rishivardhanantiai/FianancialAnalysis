@@ -11,9 +11,9 @@ export const handleLogin: RequestHandler = async (req, res) => {
 
   const cleanEmail = email.trim().toLowerCase();
 
-  // --- LOCAL FALLBACK CREDENTIALS (dev/demo only) ---
-  // In production, set NODE_ENV=production on your hosting platform to disable these.
-  if (process.env.NODE_ENV !== "production") {
+  // --- LOCAL FALLBACK CREDENTIALS ---
+  // Use ENABLE_MOCK_AUTH=true env var (don't rely on NODE_ENV — Vercel always sets it to "production")
+  if (process.env.ENABLE_MOCK_AUTH === "true") {
     const MOCK_CREDENTIALS: Record<string, { name: string; role: string; pass: string }> = {
       "admin@antiaifinance.com": { name: "ANTI AI Admin", role: "admin", pass: "antiaifinance2024" },
       "team@antiaifinance.com": { name: "ANTI AI Team Member", role: "team", pass: "team2024" },
@@ -36,12 +36,17 @@ export const handleLogin: RequestHandler = async (req, res) => {
   // --- DATABASE AUTHENTICATION ---
   try {
     const supabase = getSupabaseAdminClient();
-    
-    // Call verify_user RPC in Supabase
-    const { data, error } = await supabase.rpc("verify_user", {
+
+    // Wrap Supabase RPC in a 10-second timeout to prevent 300s hangs
+    const rpcPromise = supabase.rpc("verify_user", {
       p_email: cleanEmail,
       p_password: password,
     });
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Supabase RPC timed out after 10s")), 10000)
+    );
+
+    const { data, error } = await Promise.race([rpcPromise, timeoutPromise]);
 
     if (error) {
       console.error("Login verify_user RPC error:", error);
