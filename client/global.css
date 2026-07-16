@@ -1,0 +1,132 @@
+/** @import must precede all other statements */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap");
+@import "./theme-finance.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Tailwind CSS theme
+   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+   * A different format will require also updating the theme in tailwind.config.ts.
+  */
+  :root {
+    /* Financial Dashboard Theme - Light Mode */
+    --background: 216 29% 94%;
+    --foreground: 213 33% 16%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 213 33% 16%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 213 33% 16%;
+
+    --primary: 213 57% 35%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 50% 87%;
+    --secondary-foreground: 213 57% 35%;
+
+    --muted: 214 27% 51%;
+    --muted-foreground: 212 13% 54%;
+
+    --accent: 210 50% 87%;
+    --accent-foreground: 213 57% 35%;
+
+    --destructive: 0 67% 41%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 210 40% 92%;
+    --input: 210 40% 92%;
+    --ring: 213 57% 35%;
+
+    --radius: 0.625rem;
+
+    --sidebar-background: 213 57% 35%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 210 50% 87%;
+    --sidebar-primary-foreground: 213 57% 35%;
+    --sidebar-accent: 0 0% 100%;
+    --sidebar-accent-foreground: 213 57% 35%;
+    --sidebar-border: 213 30% 30%;
+    --sidebar-ring: 210 50% 87%;
+
+    /* Additional Financial Colors */
+    --navy: hsl(213 57% 35%);
+    --navy-dark: hsl(210 50% 21%);
+    --navy-light: hsl(213 40% 45%);
+    --blue-pale: hsl(210 50% 87%);
+    --blue-mid: hsl(210 35% 70%);
+    --green: hsl(109 48% 35%);
+    --green-bg: hsl(102 59% 92%);
+    --green-light: hsl(102 50% 70%);
+    --red: hsl(0 67% 41%);
+    --red-bg: hsl(0 88% 94%);
+    --red-light: hsl(0 80% 71%);
+    --amber: hsl(18 97% 45%);
+    --amber-bg: hsl(21 100% 96%);
+    --amber-light: hsl(38 92% 69%);
+    --f-muted: #5a718a;
+  }
+
+  .dark {
+    --background: 213 20% 18%;
+    --foreground: 210 40% 98%;
+
+    --card: 213 25% 24%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 213 25% 24%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 50% 87%;
+    --primary-foreground: 213 57% 35%;
+
+    --secondary: 213 30% 35%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 213 30% 35%;
+    --muted-foreground: 210 30% 70%;
+
+    --accent: 213 30% 35%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 67% 41%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 213 20% 30%;
+    --input: 213 20% 30%;
+    --ring: 210 50% 87%;
+    --sidebar-background: 213 57% 35%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 50% 87%;
+    --sidebar-primary-foreground: 213 57% 35%;
+    --sidebar-accent: 213 30% 40%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 213 30% 30%;
+    --sidebar-ring: 210 50% 87%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  pre,
+  code {
+    overflow-x: auto;
+    white-space: pre;
+  }
+}

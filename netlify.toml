@@ -1,0 +1,30 @@
+[build]
+  command = "npm run build:client"
+  functions = "netlify/functions"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[functions]
+  # Let esbuild inline all dependencies directly into the function bundle.
+  # All server-side packages (express, supabase, multer, exceljs, pdf2json,
+  # serverless-http) are pure JS — esbuild handles them fine.
+  # external_node_modules is removed because pnpm's .pnpm virtual store
+  # breaks Netlify's ability to copy symlinked packages at deploy time.
+  node_bundler = "esbuild"
+
+# API calls → Netlify Function
+# :splat is REQUIRED — without it Netlify does not invoke the function.
+# event.path inside the function still contains the original /api/* path.
+[[redirects]]
+  force = true
+  from = "/api/*"
+  status = 200
+  to = "/.netlify/functions/api/:splat"
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
