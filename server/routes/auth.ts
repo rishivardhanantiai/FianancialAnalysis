@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
-import { getSupabaseAdminClient } from "../lib/supabase";
-import { createSessionToken } from "../lib/session";
+import { getSupabaseAdminClient } from "../lib/supabase.js";
+import { createSessionToken } from "../lib/session.js";
 
 export const handleLogin: RequestHandler = async (req, res) => {
   const { email, password } = req.body;

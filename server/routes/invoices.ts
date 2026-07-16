@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import multer from "multer";
-import { getSupabaseAdminClient } from "../lib/supabase";
-import { InvoiceUploadResponse } from "@shared/api";
+import { getSupabaseAdminClient } from "../lib/supabase.js";
+import { InvoiceUploadResponse } from "../../shared/api.js";
 import path from "path";
 import ExcelJS from "exceljs";
 

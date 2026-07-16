@@ -1,12 +1,13 @@
 import { RequestHandler } from "express";
-import { transactionSchema } from "../../shared/schema";
-import { getSupabaseAdminClient } from "../lib/supabase";
+import { transactionSchema } from "../../shared/schema.js";
+import { getSupabaseAdminClient } from "../lib/supabase.js";
 import {
   TransactionCreateRequest,
   TransactionCreateResponse,
   TransactionRecord,
   TransactionsListResponse,
-} from "@shared/api";
+} from "../../shared/api.js";
+
 
 const TABLE_NAME = "transactions";
 

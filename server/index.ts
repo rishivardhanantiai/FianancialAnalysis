@@ -2,16 +2,16 @@ console.log("SERVER INDEX LOADED");
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { verifySessionToken } from "./lib/session";
+import { verifySessionToken } from "./lib/session.js";
 
 // --- Route Imports ---
-import { handleDemo } from "./routes/demo";
+import { handleDemo } from "./routes/demo.js";
 import {
   createTransaction,
   deleteTransaction,
   listTransactions,
   createBulkTransactions,
-} from "./routes/transactions";
+} from "./routes/transactions.js";
 import {
   handleUploadInvoice,
   handleBulkDownloadInvoices,
@@ -20,13 +20,13 @@ import {
   handleCreateInvoice, 
   handleLookupInvoice, 
   handleListInvoices
-} from "./routes/invoices";
-import importRoutes from "./routes/import";
+} from "./routes/invoices.js";
+import importRoutes from "./routes/import.js";
 
 // --- Role-Based Security Imports ---
-import { handleLogin, handleChangePassword } from "./routes/auth";
-import { listUsers, createUser, deleteUser, updateUser } from "./routes/users";
-import { listLogs, exportTransactionsCSV, exportLogsCSV } from "./routes/logs";
+import { handleLogin, handleChangePassword } from "./routes/auth.js";
+import { listUsers, createUser, deleteUser, updateUser } from "./routes/users.js";
+import { listLogs, exportTransactionsCSV, exportLogsCSV } from "./routes/logs.js";
 
 export function createServer() {
   const app = express();

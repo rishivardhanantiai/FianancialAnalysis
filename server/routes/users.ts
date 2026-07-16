@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { getSupabaseAdminClient } from "../lib/supabase";
+import { getSupabaseAdminClient } from "../lib/supabase.js";
 
 const TABLE_NAME = "users";
 

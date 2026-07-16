@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { parseBankStatement } from '../lib/statementParser';
+import { parseBankStatement } from '../lib/statementParser.js';
 
 const router = Router();
 

@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { getSupabaseAdminClient } from "../lib/supabase";
+import { getSupabaseAdminClient } from "../lib/supabase.js";
 
 const escapeCSV = (val: any): string => {
   if (val === null || val === undefined) return "";
