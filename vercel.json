@@ -2,11 +2,6 @@
   "version": 2,
   "buildCommand": "pnpm vercel-build",
   "outputDirectory": "dist",
-  "functions": {
-    "api/index.ts": {
-      "runtime": "@vercel/node@3"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
