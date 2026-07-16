@@ -35,7 +35,9 @@ export const handleLogin: RequestHandler = async (req, res) => {
 
   // --- DATABASE AUTHENTICATION ---
   try {
+    console.log("[Login] Step 1: Creating Supabase client...");
     const supabase = getSupabaseAdminClient();
+    console.log("[Login] Step 2: Supabase client created. Starting RPC...");
 
     // Wrap Supabase RPC in a 10-second timeout to prevent 300s hangs
     const rpcPromise = supabase.rpc("verify_user", {
@@ -46,10 +48,12 @@ export const handleLogin: RequestHandler = async (req, res) => {
       setTimeout(() => reject(new Error("Supabase RPC timed out after 10s")), 10000)
     );
 
+    console.log("[Login] Step 3: Waiting for RPC or timeout...");
     const { data, error } = await Promise.race([rpcPromise, timeoutPromise]);
+    console.log("[Login] Step 4: Got response. error=", error, "data length=", data?.length);
 
     if (error) {
-      console.error("Login verify_user RPC error:", error);
+      console.error("[Login] RPC error:", error);
       return res.status(500).json({ error: "Database error during validation" });
     }
 
